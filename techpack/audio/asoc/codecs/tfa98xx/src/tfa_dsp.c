@@ -3808,7 +3808,7 @@ enum tfa_error tfa_dev_mtp_set(struct tfa_device *tfa, enum tfa_mtp item, int va
 		case TFA_MTP_RE25:
 		case TFA_MTP_RE25_PRIM:
 			if(tfa->tfa_family == 2) {
-				if((tfa->rev & 0xFF) == 0x88)
+				if((tfa->rev & 0xFF) == 0x88){
 					TFA_SET_BF(tfa, R25CL, (uint16_t)value);
 				else
 					TFA_SET_BF(tfa, R25C, (uint16_t)value);
