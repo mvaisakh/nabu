@@ -12,8 +12,6 @@
  */
 
 #include "sdm429-bg-soc.dtsi"
-#include "sdm429-board-common.dtsi"
-
 &sdhc_1 {
 	/* device core power supply */
 	vdd-supply = <&L19A>;
