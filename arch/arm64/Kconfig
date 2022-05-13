@@ -1404,6 +1404,12 @@ config BUILD_ARM64_DT_OVERLAY
 	  This option enables support for DT overlay compilation.
 endmenu
 
+config HWCONF_MANAGER
+	def_bool y
+
+config BOOTINFO
+	def_bool y
+
 menu "Userspace binary formats"
 
 source "fs/Kconfig.binfmt"
