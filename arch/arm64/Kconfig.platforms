@@ -373,4 +373,10 @@ config ARCH_ZYNQMP
 	help
 	  This enables support for Xilinx ZynqMP Family
 
+
+config ARCH_XIAOMI_SM8150
+	bool "Xiaomi SM8150 Board support"
+	help
+	  This enables support for Xiaomi SM8150 Board family
+
 endmenu
