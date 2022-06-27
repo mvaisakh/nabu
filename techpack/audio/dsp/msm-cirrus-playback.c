@@ -1351,8 +1351,9 @@ struct miscdevice crus_sp_misc = {
 
 int __init crus_sp_init(void)
 {
-    if(this.initialized)
-        return 0;
+	if(this.initialized)
+        	return 0;
+
 	pr_info("Initializing misc device\n");
 
 	misc_register(&crus_sp_misc);
