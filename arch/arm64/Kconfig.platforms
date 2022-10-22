@@ -362,6 +362,13 @@ config ARCH_XGENE
 	help
 	  This enables support for AppliedMicro X-Gene SOC Family
 
+config ARCH_NABU
+	bool "Xiaomi Pad 5 support"
+	depends on ARCH_QCOM
+	depends on ARCH_SM8150
+	help
+	  This enables support for Xiaomi Pad 5 (nabu)
+
 config ARCH_ZX
 	bool "ZTE ZX SoC Family"
 	select PINCTRL

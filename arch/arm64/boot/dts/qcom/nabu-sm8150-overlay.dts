@@ -1,4 +1,4 @@
-/* Copyright (c) 2019, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2017-2018, The Linux Foundation. All rights reserved.
  * Copyright (C) 2021 XiaoMi, Inc.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -14,13 +14,16 @@
 /dts-v1/;
 /plugin/;
 
+#include <dt-bindings/clock/qcom,gcc-sm8150.h>
+#include <dt-bindings/clock/qcom,camcc-sm8150.h>
+#include <dt-bindings/clock/qcom,rpmh.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 
-#include "atoll-atp.dtsi"
+#include "nabu-sm8150.dtsi"
+#include "nabu-audio-overlay.dtsi"
 
 / {
-	model = "ATP";
-	compatible = "qcom,atoll-idp", "qcom,atoll", "qcom,idp", "qcom,atp";
-	qcom,msm-id = <407 0x0>;
-	qcom,board-id = <33 0>;
+	model = "NABU";
+	compatible = "qcom,sm8150-cdp", "qcom,sm8150", "qcom,cdp";
+	qcom,board-id = <48 0>;
 };
