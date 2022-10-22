@@ -6,6 +6,7 @@
  * file.
  *
  * Copyright (C) 2015, Google, Inc.
+ * Copyright (C) 2021 XiaoMi, Inc.
  *
  * Written by Michael Halcrow, 2015.
  * Modified by Jaegeuk Kim, 2015.
@@ -19,6 +20,10 @@
 #include <uapi/linux/fscrypt.h>
 
 #define FS_CRYPTO_BLOCK_SIZE		16
+#define FS_KEY_DESCRIPTOR_SIZE		FSCRYPT_KEY_DESCRIPTOR_SIZE
+#define FS_KEY_DERIVATION_NONCE_SIZE	16
+#define FSCRYPT_CONTEXT_V1	1
+#define FSCRYPT_CONTEXT_V2	2
 
 struct fscrypt_info;
 
@@ -34,6 +39,33 @@ struct fscrypt_name {
 	u32 minor_hash;
 	struct fscrypt_str crypto_buf;
 	bool is_ciphertext_name;
+};
+
+/**
+ * For encrypted or decrypted filename
+ */
+struct fscrypt_str_ex {
+	char fname[256];
+	__u32 len;
+};
+
+/**
+ * For encrypted filename and corresponding encryption context
+ */
+struct encrypt_fname {
+	struct fscrypt_str_ex iname;
+	struct fscrypt_str_ex oname;
+};
+
+/*encrypt_fname_v1 and encrypt_fname_v2 only for ioctl*/
+struct encrypt_fname_v1 {
+    struct fscrypt_str_ex iname;
+    struct fscrypt_str_ex oname;
+};
+
+struct encrypt_fname_v2 {
+    struct fscrypt_str_ex iname;
+    struct fscrypt_str_ex oname;
 };
 
 #define FSTR_INIT(n, l)		{ .name = n, .len = l }
@@ -145,6 +177,9 @@ extern int fscrypt_d_revalidate(struct dentry *dentry, unsigned int flags);
 extern int fscrypt_ioctl_set_policy(struct file *, const void __user *);
 extern int fscrypt_ioctl_get_policy(struct file *, void __user *);
 extern int fscrypt_ioctl_get_policy_ex(struct file *, void __user *);
+extern int fscrypt_ioctl_decrypt_filename(struct file *, struct encrypt_fname *);
+extern int fscrypt_ioctl_decrypt_filename_v1(struct file *, void __user *);
+extern int fscrypt_ioctl_decrypt_filename_v2(struct file *, void __user *);
 extern int fscrypt_ioctl_get_nonce(struct file *filp, void __user *arg);
 extern int fscrypt_has_permitted_context(struct inode *, struct inode *);
 extern int fscrypt_inherit_context(struct inode *, struct inode *,
@@ -300,6 +335,20 @@ static inline int fscrypt_ioctl_get_policy(struct file *filp, void __user *arg)
 
 static inline int fscrypt_ioctl_get_policy_ex(struct file *filp,
 					      void __user *arg)
+{
+	return -EOPNOTSUPP;
+}
+
+static inline int fscrypt_ioctl_decrypt_filename(struct file *filp, struct encrypt_fname *enc_fname)
+{
+       return -EOPNOTSUPP;
+}
+
+static inline int fscrypt_ioctl_decrypt_filename_v1(struct file *filp, void __user *arg)
+{
+	return -EOPNOTSUPP;
+}
+static inline int fscrypt_ioctl_decrypt_filename_v2(struct file *filp, void __user *arg)
 {
 	return -EOPNOTSUPP;
 }
