@@ -35,7 +35,6 @@
 #include "../wcd9xxx-irq.h"
 #include "../wcdcal-hwdep.h"
 #include "../wcd-mbhc-v2-api.h"
-#include "send_data_to_xlog.h"
 
 #define TAVIL_ZDET_SUPPORTED          true
 /* Z value defined in milliohm */
@@ -739,7 +738,6 @@ right_ch_impedance:
 		dev_dbg(codec->dev, "%s: stereo plug type detected\n",
 			__func__);
 		mbhc->hph_type = WCD_MBHC_HPH_STEREO;
-		send_mbhc_impedance_to_xlog(*zl, *zr);
 	} else {
 		dev_dbg(codec->dev, "%s: MONO plug type detected\n",
 			__func__);
