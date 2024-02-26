@@ -167,14 +167,14 @@ struct drm_panel_esd_config {
 	u8 *return_buf;
 	u8 *status_buf;
 	u32 groups;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int esd_err_irq_gpio;
 	int esd_err_irq;
 	int esd_err_irq_flags;
 #endif
 };
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 struct dsi_read_config {
 	bool enabled;
 	struct dsi_panel_cmd_set read_cmd;
@@ -239,7 +239,7 @@ struct dsi_panel {
 
 	bool sync_broadcast_en;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool is_tddi_flag;
 	bool tddi_doubleclick_flag;
 	bool panel_dead_flag;
@@ -374,7 +374,7 @@ int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status);
 
 u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 ssize_t dsi_panel_lockdown_info_read(unsigned char *plockdowninfo);
 
 int dsi_panel_write_cmd_set(struct dsi_panel *panel, struct dsi_panel_cmd_set *cmd_sets);

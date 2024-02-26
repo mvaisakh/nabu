@@ -21,7 +21,7 @@
 #include <linux/string.h>
 #include "dsi_drm.h"
 #include "dsi_display.h"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #include "dsi_panel.h"
 #endif
 #include "sde_crtc.h"
@@ -762,7 +762,7 @@ void sde_connector_helper_bridge_enable(struct drm_connector *connector)
 				MSM_ENC_TX_COMPLETE);
 	c_conn->allow_bl_update = true;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (!display->is_first_boot && c_conn->bl_device) {
 #else
 	if (c_conn->bl_device) {
@@ -772,7 +772,7 @@ void sde_connector_helper_bridge_enable(struct drm_connector *connector)
 		backlight_update_status(c_conn->bl_device);
 	}
 	c_conn->panel_dead = false;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	display->is_first_boot = false;
 #endif
 }
@@ -1890,7 +1890,7 @@ static int sde_connector_atomic_check(struct drm_connector *connector,
 	return 0;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static irqreturn_t esd_err_irq_handle(int irq, void *data)
 {
 	struct sde_connector *c_conn = data;
@@ -1924,7 +1924,7 @@ static void _sde_connector_report_panel_dead(struct sde_connector *conn,
 	bool skip_pre_kickoff)
 {
 	struct drm_event event;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct dsi_display *display = (struct dsi_display *)(conn->display);
 #endif
 
@@ -1940,7 +1940,7 @@ static void _sde_connector_report_panel_dead(struct sde_connector *conn,
 		return;
 
 	conn->panel_dead = true;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	display->panel->panel_dead_flag = true;
 #endif
 	event.type = DRM_EVENT_PANEL_DEAD;
@@ -2363,7 +2363,7 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 				CONNECTOR_PROP_HDR_INFO);
 		}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 		/* register esd irq and enable it after panel enabled */
 		if (dsi_display && dsi_display->panel &&
 			dsi_display->panel->esd_config.esd_err_irq_gpio > 0) {

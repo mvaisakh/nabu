@@ -436,7 +436,7 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 {
 	int rc = 0;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (panel->is_tddi_flag) {
 		if (!panel->tddi_doubleclick_flag || panel->panel_dead_flag) {
 			rc = dsi_pwr_enable_regulator(&panel->power_info, true);
@@ -496,7 +496,7 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 	if (gpio_is_valid(panel->reset_config.disp_en_gpio))
 		gpio_set_value(panel->reset_config.disp_en_gpio, 0);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (panel->is_tddi_flag) {
 		if (!panel->tddi_doubleclick_flag || panel->panel_dead_flag) {
 			if (gpio_is_valid(panel->reset_config.reset_gpio))
@@ -520,7 +520,7 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 		       rc);
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (panel->is_tddi_flag) {
 		if(!panel->tddi_doubleclick_flag || panel->panel_dead_flag) {
 			rc = dsi_pwr_enable_regulator(&panel->power_info, false);
@@ -1851,7 +1851,7 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-qsync-off-commands",
 	"qcom,mdss-dsi-dispparam-hbm-fod-on-command",
 	"qcom,mdss-dsi-dispparam-hbm-fod-off-command",
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	"mi,mdss-dsi-read-lockdown-info-command",
 #endif
 };
@@ -1882,7 +1882,7 @@ const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-qsync-off-commands-state",
 	"qcom,mdss-dsi-dispparam-hbm-fod-on-command-state",
 	"qcom,mdss-dsi-dispparam-hbm-fod-off-command-state",
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	"mi,mdss-dsi-read-lockdown-info-command-state",
 #endif
 };
@@ -3373,7 +3373,7 @@ static int dsi_panel_parse_esd_config(struct dsi_panel *panel)
 	esd_config = &panel->esd_config;
 	esd_config->status_mode = ESD_MODE_MAX;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	/* esd-err-flag method will be prefered */
 	esd_config->esd_err_irq_gpio = of_get_named_gpio_flags(
 			panel->panel_of_node,
@@ -3468,7 +3468,7 @@ end:
 	utils->node = panel->panel_of_node;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static int dsi_panel_parse_mi_config(struct dsi_panel *panel,
 				     struct device_node *of_node)
 {
@@ -3600,7 +3600,7 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	if (rc)
 		pr_debug("failed to parse esd config, rc=%d\n", rc);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	rc = dsi_panel_parse_mi_config(panel, of_node);
 	if (rc)
 		pr_err("failed to parse mi config, rc=%d\n", rc);
@@ -4566,7 +4566,7 @@ int dsi_panel_disable(struct dsi_panel *panel)
 
 	/* Avoid sending panel off commands when ESD recovery is underway */
 	if (!atomic_read(&panel->esd_recovery_pending)) {
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 		panel->panel_initialized = false;
 #endif
 		/*
@@ -4654,7 +4654,7 @@ error:
 	return rc;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static int dsi_panel_get_lockdown_from_cmdline(unsigned char *plockdowninfo)
 {
 	int ret = -1;
@@ -4874,7 +4874,9 @@ exit_ctrl:
 
 	return rc;
 }
+#endif
 
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 void dsi_panel_doubleclick_enable(bool on)
 {
 	struct dsi_display *primary_display = get_main_display();
