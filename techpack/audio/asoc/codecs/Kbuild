@@ -211,6 +211,7 @@ ifeq ($(KERNEL_BUILD), 1)
 	obj-y	+= tas256x/
 	obj-y	+= wcd937x/
 	obj-y	+= bolero/
+	obj-$(CONFIG_MACH_XIAOMI_NABU)	+= cs35l41_v2/
 endif
 
 ifeq ($(CONFIG_SND_SOC_GCOV), y)
