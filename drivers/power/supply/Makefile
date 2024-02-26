@@ -84,6 +84,9 @@ obj-$(CONFIG_AXP288_FUEL_GAUGE) += axp288_fuel_gauge.o
 obj-$(CONFIG_AXP288_CHARGER)	+= axp288_charger.o
 obj-$(CONFIG_ARCH_QCOM)		+= qcom/
 
+# nabu
+obj-$(CONFIG_MACH_XIAOMI_NABU)	+= maxim_nabu/
+
 # vayu
-obj-y         += maxim_vayu/
-obj-y         += ti_vayu/
+obj-$(CONFIG_MACH_XIAOMI_VAYU)	+= maxim_vayu/
+obj-$(CONFIG_MACH_XIAOMI_VAYU)	+= ti_vayu/

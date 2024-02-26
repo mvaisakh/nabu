@@ -22,7 +22,7 @@
 
 #define STEP_CHG_VOTER		"STEP_CHG_VOTER"
 #define JEITA_VOTER		"JEITA_VOTER"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define DYNAMIC_FV_VOTER	"DYNAMIC_FV_VOTER"
 #endif
 
@@ -47,7 +47,7 @@ struct jeita_fv_cfg {
 	struct range_data		fv_cfg[MAX_STEP_CHG_ENTRIES];
 };
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 struct dynamic_fv_cfg {
 	char			*prop_name;
 	struct range_data		fv_cfg[MAX_STEP_CHG_ENTRIES];
@@ -58,19 +58,19 @@ struct step_chg_info {
 	struct device		*dev;
 	ktime_t			step_last_update_time;
 	ktime_t			jeita_last_update_time;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	ktime_t			dynamic_fv_last_update_time;
 #endif
 	bool			step_chg_enable;
 	bool			sw_jeita_enable;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			dynamic_fv_enable;
 #endif
 	bool			jeita_arb_en;
 	bool			config_is_read;
 	bool			step_chg_cfg_valid;
 	bool			sw_jeita_cfg_valid;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			dynamic_fv_cfg_valid;
 #endif
 	bool			soc_based_step_chg;
@@ -78,13 +78,13 @@ struct step_chg_info {
 	bool			vbat_avg_based_step_chg;
 	bool			batt_missing;
 	bool			taper_fcc;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			six_pin_battery;
 	bool			use_bq_pump;
 #endif
 	int			jeita_fcc_index;
 	int			jeita_fv_index;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			dynamic_fv_index;
 #endif
 	int			step_index;
@@ -93,14 +93,14 @@ struct step_chg_info {
 	struct step_chg_cfg	*step_chg_config;
 	struct jeita_fcc_cfg	*jeita_fcc_config;
 	struct jeita_fv_cfg	*jeita_fv_config;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct dynamic_fv_cfg	*dynamic_fv_config;
 #endif
 
 	struct votable		*fcc_votable;
 	struct votable		*fv_votable;
 	struct votable		*usb_icl_votable;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct votable		*dc_suspend_votable;
 #endif
 	struct wakeup_source	*step_chg_ws;
@@ -108,7 +108,7 @@ struct step_chg_info {
 	struct power_supply	*bms_psy;
 	struct power_supply	*usb_psy;
 	struct power_supply	*dc_psy;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct power_supply	*bq_psy;
 #endif
 	struct delayed_work	status_change_work;
@@ -158,11 +158,16 @@ static bool is_usb_available(struct step_chg_info *chip)
 	return true;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static bool is_bq25970_available(struct step_chg_info *chip)
 {
 	if (!chip->bq_psy)
 		chip->bq_psy = power_supply_get_by_name("bq2597x-standalone");
+
+#ifdef CONFIG_MACH_XIAOMI_NABU
+        if (!chip->bq_psy)
+                chip->bq_psy = power_supply_get_by_name("ln8000");
+#endif
 
 	if (!chip->bq_psy)
 		return false;
@@ -408,7 +413,7 @@ static int get_step_chg_jeita_setting_from_profile(struct step_chg_info *chip)
 		chip->sw_jeita_cfg_valid = false;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->dynamic_fv_cfg_valid = true;
 	rc = read_range_data_from_node(profile_node,
 			"qcom,dynamic-fv-ranges",
@@ -520,7 +525,7 @@ static int get_val(struct range_data *range, int hysteresis, int current_index,
 		*val = range[*new_index].value;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (threshold < range[0].low_threshold) {
 		*new_index = 0;
 		*val = range[*new_index].value;
@@ -612,12 +617,12 @@ static int handle_step_chg_config(struct step_chg_info *chip)
 	union power_supply_propval pval = {0, };
 	int rc = 0, fcc_ua = 0, current_index;
 	u64 elapsed_us;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int update_now = 0;
 	static int usb_present;
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (!is_usb_available(chip))
 		return 0;
 	rc = power_supply_get_property(chip->usb_psy,
@@ -633,7 +638,7 @@ static int handle_step_chg_config(struct step_chg_info *chip)
 
 	elapsed_us = ktime_us_delta(ktime_get(), chip->step_last_update_time);
 	/* skip processing, event too early */
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (elapsed_us < STEP_CHG_HYSTERISIS_DELAY_US && !update_now)
 #else
 	if (elapsed_us < STEP_CHG_HYSTERISIS_DELAY_US)
@@ -653,7 +658,7 @@ static int handle_step_chg_config(struct step_chg_info *chip)
 		goto update_time;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (chip->use_bq_pump) {
 		if (is_bq25970_available(chip)) {
 			rc = power_supply_get_property(chip->bq_psy,
@@ -668,7 +673,7 @@ static int handle_step_chg_config(struct step_chg_info *chip)
 	else
 		rc = power_supply_get_property(chip->batt_psy,
 				chip->step_chg_config->param.psy_prop, &pval);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	}
 #endif
 
@@ -722,7 +727,7 @@ update_time:
 	return 0;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static int handle_dynamic_fv(struct step_chg_info *chip)
 {
 	union power_supply_propval pval = {0, };
@@ -802,12 +807,12 @@ update_time:
 }
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define JEITA_SUSPEND_HYST_UV		130000
 #else
 #define JEITA_SUSPEND_HYST_UV		50000
 #endif
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define JEITA_SIX_PIN_BATT_HYST_UV	100000
 #define WARM_VFLOAT_UV			4100000
 #endif
@@ -816,7 +821,7 @@ static int handle_jeita(struct step_chg_info *chip)
 	union power_supply_propval pval = {0, };
 	int rc = 0, fcc_ua = 0, fv_uv = 0;
 	u64 elapsed_us;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int update_now = 0;
 	int curr_vfloat_uv, curr_vbat_uv;
 	int temp, pd_authen_result = 0;
@@ -843,7 +848,7 @@ static int handle_jeita(struct step_chg_info *chip)
 		return 0;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (!is_usb_available(chip))
 		return 0;
 
@@ -860,7 +865,7 @@ static int handle_jeita(struct step_chg_info *chip)
 
 	elapsed_us = ktime_us_delta(ktime_get(), chip->jeita_last_update_time);
 	/* skip processing, event too early */
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (elapsed_us < STEP_CHG_HYSTERISIS_DELAY_US && !update_now)
 #else
 	if (elapsed_us < STEP_CHG_HYSTERISIS_DELAY_US)
@@ -880,7 +885,7 @@ static int handle_jeita(struct step_chg_info *chip)
 		return rc;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	temp = pval.intval;
 #endif
 	rc = get_val(chip->jeita_fcc_config->fcc_cfg,
@@ -898,7 +903,7 @@ static int handle_jeita(struct step_chg_info *chip)
 		/* changing FCC is a must */
 		return -EINVAL;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (rc == -ENODATA)
 		vote(chip->fcc_votable, JEITA_VOTER, true, fcc_ua);
 	else
@@ -914,7 +919,7 @@ static int handle_jeita(struct step_chg_info *chip)
 	if (rc < 0)
 		fv_uv = 0;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	batt_temp = pval.intval;
 	rc = power_supply_get_property(chip->bms_psy,
 				POWER_SUPPLY_PROP_CAPACITY, &pval);
@@ -969,7 +974,7 @@ static int handle_jeita(struct step_chg_info *chip)
 	if (!chip->usb_icl_votable)
 		goto set_jeita_fv;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	/* set and clear fast charge mode when soft jeita trigger and clear */
 	if (chip->six_pin_battery) {
 		rc = power_supply_get_property(chip->usb_psy,
@@ -984,6 +989,10 @@ static int handle_jeita(struct step_chg_info *chip)
 			pr_err("get hvdcp3_type failed, rc=%d\n", rc);
 
 		if ((pval.intval == HVDCP3_CLASS_B_27W)
+#ifdef CONFIG_MACH_XIAOMI_NABU
+					|| (pval.intval == HVDCP3P5_CLASS_A_18W)
+					|| (pval.intval == HVDCP3P5_CLASS_B_27W)
+#endif
 					|| (pd_authen_result == 1)) {
 			if ((temp >= BATT_WARM_THRESHOLD || temp <= BATT_COOL_THRESHOLD)
 						&& !fast_mode_dis) {
@@ -1028,14 +1037,14 @@ static int handle_jeita(struct step_chg_info *chip)
 	 * Suspend USB input path if battery voltage is above
 	 * JEITA VFLOAT threshold.
 	 */
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (fv_uv > 0) {
 #else
 	if (chip->jeita_arb_en && fv_uv > 0) {
 #endif
 		rc = power_supply_get_property(chip->batt_psy,
 				POWER_SUPPLY_PROP_VOLTAGE_NOW, &pval);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 		if (rc < 0) {
 			pr_err("Get battery voltage failed, rc = %d\n", rc);
 			goto set_jeita_fv;
@@ -1110,7 +1119,7 @@ static int handle_battery_insertion(struct step_chg_info *chip)
 		if (chip->batt_missing) {
 			chip->step_chg_cfg_valid = false;
 			chip->sw_jeita_cfg_valid = false;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 			chip->dynamic_fv_cfg_valid = false;
 #endif
 			chip->get_config_retry_count = 0;
@@ -1134,7 +1143,7 @@ static void status_change_work(struct work_struct *work)
 	int rc = 0;
 	union power_supply_propval prop = {0, };
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (!is_batt_available(chip) || !is_bms_available(chip) || !is_usb_available(chip))
 #else
 	if (!is_batt_available(chip) || !is_bms_available(chip))
@@ -1148,7 +1157,7 @@ static void status_change_work(struct work_struct *work)
 	if (rc < 0)
 		pr_err("Couldn't handle sw jeita rc = %d\n", rc);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	rc = handle_dynamic_fv(chip);
 	if (rc < 0)
 		pr_err("Couldn't handle sw dynamic fv rc = %d\n", rc);
@@ -1239,7 +1248,7 @@ int qcom_step_chg_init(struct device *dev,
 	chip->step_index = -EINVAL;
 	chip->jeita_fcc_index = -EINVAL;
 	chip->jeita_fv_index = -EINVAL;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->dynamic_fv_index = -EINVAL;
 #endif
 
@@ -1250,7 +1259,7 @@ int qcom_step_chg_init(struct device *dev,
 
 	chip->step_chg_config->param.psy_prop = POWER_SUPPLY_PROP_VOLTAGE_NOW;
 	chip->step_chg_config->param.prop_name = "VBATT";
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->step_chg_config->param.hysteresis = 10000;
 #else
 	chip->step_chg_config->param.hysteresis = 100000;
@@ -1260,11 +1269,11 @@ int qcom_step_chg_init(struct device *dev,
 			sizeof(struct jeita_fcc_cfg), GFP_KERNEL);
 	chip->jeita_fv_config = devm_kzalloc(dev,
 			sizeof(struct jeita_fv_cfg), GFP_KERNEL);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->dynamic_fv_config = devm_kzalloc(dev,
 			sizeof(struct dynamic_fv_cfg), GFP_KERNEL);
 #endif
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (!chip->jeita_fcc_config || !chip->jeita_fv_config || !chip->dynamic_fv_config)
 #else
 	if (!chip->jeita_fcc_config || !chip->jeita_fv_config)
@@ -1273,20 +1282,20 @@ int qcom_step_chg_init(struct device *dev,
 
 	chip->jeita_fcc_config->param.psy_prop = POWER_SUPPLY_PROP_TEMP;
 	chip->jeita_fcc_config->param.prop_name = "BATT_TEMP";
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->jeita_fcc_config->param.hysteresis = 5;
 #else
 	chip->jeita_fcc_config->param.hysteresis = 10;
 #endif
 	chip->jeita_fv_config->param.psy_prop = POWER_SUPPLY_PROP_TEMP;
 	chip->jeita_fv_config->param.prop_name = "BATT_TEMP";
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->jeita_fv_config->param.hysteresis = 5;
 #else
 	chip->jeita_fv_config->param.hysteresis = 10;
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->dynamic_fv_config->prop_name = "BATT_CYCLE_COUNT";
 #endif
 	INIT_DELAYED_WORK(&chip->status_change_work, status_change_work);

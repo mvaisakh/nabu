@@ -13,13 +13,13 @@
 #ifndef __STEP_CHG_H__
 #define __STEP_CHG_H__
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define MAX_STEP_CHG_ENTRIES	6
 #else
 #define MAX_STEP_CHG_ENTRIES	8
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define BATT_CP_COOL_THRESHOLD		100
 #define BATT_CP_WARM_THRESHOLD		450
 
@@ -30,6 +30,10 @@ enum hvdcp3_class_type {
 	HVDCP3_CLASS_NONE = 0,
 	HVDCP3_CLASS_A_18W,
 	HVDCP3_CLASS_B_27W,
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	HVDCP3P5_CLASS_A_18W,
+	HVDCP3P5_CLASS_B_27W,
+#endif
 };
 #endif
 
@@ -52,7 +56,7 @@ void qcom_step_chg_deinit(void);
 int read_range_data_from_node(struct device_node *node,
 		const char *prop_str, struct range_data *ranges,
 		int max_threshold, u32 max_value);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int qcom_step_chg_get_step_index(void);
 #endif
 #endif /* __STEP_CHG_H__ */

@@ -407,7 +407,7 @@ void fg_notify_charger(struct fg_dev *fg)
 		}
 	}
 
-#ifndef CONFIG_MACH_XIAOMI_VAYU
+#ifndef CONFIG_MACH_XIAOMI_SM8150
 	if (fg->bp.fastchg_curr_ma > 0) {
 		prop.intval = fg->bp.fastchg_curr_ma * 1000;
 		rc = power_supply_set_property(fg->batt_psy,
@@ -869,7 +869,7 @@ wait:
 		goto out;
 	}
 out:
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (fg->empty_restart_fg)
 		fg->empty_restart_fg = false;
 #endif
@@ -922,7 +922,7 @@ int fg_get_msoc(struct fg_dev *fg, int *msoc)
 	 * of the values 1-254 will be scaled to 1-99. DIV_ROUND_UP will not
 	 * be suitable here as it rounds up any value higher than 252 to 100.
 	 */
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if ((*msoc >= FULL_SOC_REPORT_THR - 2)
 				&& (*msoc < FULL_SOC_RAW) && fg->report_full) {
 		*msoc = DIV_ROUND_CLOSEST(*msoc * FULL_CAPACITY, FULL_SOC_RAW) + 1;
@@ -934,7 +934,7 @@ int fg_get_msoc(struct fg_dev *fg, int *msoc)
 		*msoc = 100;
 	else if (*msoc == 0)
 		*msoc = 0;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	else if (*msoc >= FULL_SOC_REPORT_THR - 4 && *msoc <= FULL_SOC_REPORT_THR - 3 && fg->report_full)
 		*msoc = DIV_ROUND_CLOSEST(*msoc * FULL_CAPACITY, FULL_SOC_RAW);
 #endif

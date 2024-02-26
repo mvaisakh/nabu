@@ -26,7 +26,7 @@
 #include <linux/usb/class-dual-role.h>
 #include "storm-watch.h"
 #include "battery.h"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #include <linux/usb/usbpd.h>
 #include <linux/gpio.h>
 #include <linux/gpio/consumer.h>
@@ -46,7 +46,7 @@ enum print_reason {
 #define USER_VOTER			"USER_VOTER"
 #define PD_VOTER			"PD_VOTER"
 #define DCP_VOTER			"DCP_VOTER"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define CP_VOTER			"CP_VOTER"
 #endif
 #define QC_VOTER			"QC_VOTER"
@@ -68,7 +68,7 @@ enum print_reason {
 #define SW_ICL_MAX_VOTER		"SW_ICL_MAX_VOTER"
 #define PL_QNOVO_VOTER			"PL_QNOVO_VOTER"
 #define QNOVO_VOTER			"QNOVO_VOTER"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define OTG_VOTER                       "OTG_VOTER"
 #define SW_DISABLE_DC_VOTER     "SW_DISABLE_DC_VOTER"
 #endif
@@ -79,7 +79,7 @@ enum print_reason {
 #define PL_FCC_LOW_VOTER		"PL_FCC_LOW_VOTER"
 #define WBC_VOTER			"WBC_VOTER"
 #define HW_LIMIT_VOTER			"HW_LIMIT_VOTER"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define CHG_AWAKE_VOTER			"CHG_AWAKE_VOTER"
 #define DCIN_ADAPTER_VOTER		"DCIN_ADAPTER_VOTER"
 #define DCIN_LIMIT_VOTER		"DCIN_LIMIT_VOTER"
@@ -87,7 +87,7 @@ enum print_reason {
 #define PL_SMB_EN_VOTER			"PL_SMB_EN_VOTER"
 #define FORCE_RECHARGE_VOTER		"FORCE_RECHARGE_VOTER"
 #define LPD_VOTER			"LPD_VOTER"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define DC_AWAKE_VOTER			"DC_AWAKE_VOTER"
 #define DC_UV_AWAKE_VOTER		"DC_UV_AWAKE_VOTER"
 #define CLASSA_QC_FCC_VOTER		"CLASSA_QC_FCC_VOTER"
@@ -97,13 +97,13 @@ enum print_reason {
 #endif
 #define FCC_STEPPER_VOTER		"FCC_STEPPER_VOTER"
 #define SW_THERM_REGULATION_VOTER	"SW_THERM_REGULATION_VOTER"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define SW_CONN_THERM_VOTER		"SW_CONN_THERM_VOTER"
 #define LIQUID_DETECTION_VOTER		"LIQUID_DETECTION_VOTER"
 #define QC2_UNSUPPORTED_VOTER		"QC2_UNSUPPORTED_VOTER"
 #endif
 #define JEITA_ARB_VOTER			"JEITA_ARB_VOTER"
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define AFTER_FFC_VOTER			"AFTER_FFC_VOTER"
 #endif
 #define MOISTURE_VOTER			"MOISTURE_VOTER"
@@ -124,7 +124,7 @@ enum print_reason {
 #define OVERHEAT_LIMIT_VOTER		"OVERHEAT_LIMIT_VOTER"
 #define GPIO_DCIN_VOTER			"GPIO_DCIN_VOTER"
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define FCC_VOTER			"FCC_VOTER"
 #define ICL_CHANGE_VOTER		"ICL_CHANGE_VOTER"
 #define PD_VERIFED_VOTER		"PD_VERIFED_VOTER"
@@ -136,6 +136,14 @@ enum print_reason {
 #define MAIN_CHG_VOTER			"MAIN_CHG_VOTER"
 #define HVDCP3_START_ICL_VOTER	"HVDCP3_START_ICL_VOTER"
 #define MAIN_CHG_SUSPEND_VOTER			"MAIN_CHG_SUSPEND_VOTER"
+#ifdef CONFIG_MACH_XIAOMI_NABU
+/* use for QC3P5 */
+#define QC3P5_VOTER			"QC3P5_VOTER"
+#define FCC_MAX_QC3P5_VOTER		"FCC_MAX_QC3P5_VOTER"
+/* use for Ln8000 */
+#define BATT_LN8000_VOTER		"BATT_LN8000_VOTER"
+#define BATT_BQ2597X_VOTER		"BATT_BQ2597X_VOTER"
+#endif
 
 #define WLS_FCC_VOTER			"WLS_FCC_VOTER"
 #endif
@@ -143,7 +151,12 @@ enum print_reason {
 #define BOOST_BACK_STORM_COUNT	3
 #define WEAK_CHG_STORM_COUNT	8
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
+#ifdef CONFIG_MACH_XIAOMI_NABU
+#define MAX_QC3P5_PLUSE_COUNT_ALLOWED		230
+#define QC3P5_DP_RAPIDLY_TUNE_ALLOWED		120
+#define QC3P5_DP_RAPIDLY_TUNE_PULSE		10
+#endif
 /* defined for distinguish qc class_a and class_b */
 #define VOL_THR_FOR_QC_CLASS_AB		12300000
 #define COMP_FOR_LOW_RESISTANCE_CABLE	100000
@@ -210,14 +223,19 @@ enum print_reason {
 #define SDP_100_MA			100000
 #define SDP_CURRENT_UA			500000
 #define CDP_CURRENT_UA			1500000
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #ifdef CONFIG_MACH_XIAOMI_VAYU
 #define DCP_CURRENT_UA			1600000
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+#define DCP_CURRENT_UA			2000000
+#endif
 #define HVDCP_CURRENT_UA		2800000
 #else
 #define DCP_CURRENT_UA			1500000
 #define HVDCP_CURRENT_UA		3000000
 #endif
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define HVDCP_CLASS_B_CURRENT_UA		3100000
 #define HVDCP_START_CURRENT_UA_FOR_BQ	500000
 #endif
@@ -227,9 +245,12 @@ enum print_reason {
 #define DCIN_ICL_MIN_UA			100000
 #define DCIN_ICL_MAX_UA			1500000
 #define DCIN_ICL_STEP_UA		100000
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define SLOWLY_CHARGING_CURRENT		1000000
 #define ADC_CHG_TERM_MASK		32767
+#ifdef CONFIG_MACH_XIAOMI_NABU
+#define HVDCP3P5_40W_CURRENT_UA		4500000
+#endif
 /*DCIN ICL*/
 #define PSNS_CURRENT_SAMPLE_RATE 1053
 #define PSNS_CURRENT_SAMPLE_RESIS 392
@@ -271,8 +292,11 @@ enum print_reason {
 /* used for bq charge pump solution */
 #define MAIN_CHARGER_ICL	2000000
 #define QC3_CHARGER_ICL		500000
+#ifdef CONFIG_MACH_XIAOMI_NABU
+#define QC3P5_CHARGER_ICL	2000000
+#else
 #define QC3P5_CHARGER_ICL	200000
-
+#endif
 #define MAIN_CHARGER_STOP_ICL	50000
 #define ESR_WORK_TIME_2S	2000
 #define ESR_WORK_TIME_180S	180000
@@ -451,7 +475,7 @@ enum comp_clamp_levels {
 	MAX_CLAMP_LEVEL,
 };
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 enum quick_charge_type {
 	QUICK_CHARGE_NORMAL = 0,
 	QUICK_CHARGE_FAST,
@@ -521,7 +545,7 @@ enum icl_override_mode {
 	SW_OVERRIDE_USB51_MODE,
 	/* ICL other than USB51 */
 	SW_OVERRIDE_HC_MODE,
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	/* ICL in cc float mode */
 	SW_OVERRIDE_NO_CC_MODE,
 #endif
@@ -600,7 +624,7 @@ struct smb_iio {
 	struct iio_channel	*die_temp_chan;
 	struct iio_channel	*skin_temp_chan;
 	struct iio_channel	*smb_temp_chan;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct iio_channel	*hw_version_gpio5;
 	struct iio_channel	*project_gpio6;
 #endif
@@ -620,7 +644,7 @@ struct smb_charger {
 	int			otg_delay_ms;
 	int			*weak_chg_icl_ua;
 	bool			pd_not_supported;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			init_once;
 	bool			support_liquid;
 	bool			dynamic_fv_enabled;
@@ -642,27 +666,27 @@ struct smb_charger {
 	struct power_supply		*usb_psy;
 	struct power_supply		*dc_psy;
 	struct power_supply		*bms_psy;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct power_supply_desc		usb_psy_desc;
 #endif
 	struct power_supply		*usb_main_psy;
 	struct power_supply		*usb_port_psy;
 	struct power_supply		*wls_psy;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct power_supply		*idtp_psy;
 	struct power_supply		*wip_psy;
 	struct power_supply		*wireless_psy;
 	struct power_supply		*wls_chip_psy;
 #endif
 	struct power_supply		*cp_psy;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct power_supply		*ln_psy;
 	struct power_supply		*halo_psy;
 	struct power_supply		*cp_chip_psy;
 	struct power_supply		*batt_verify_psy;
 #endif
 	enum power_supply_type		real_charger_type;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	enum power_supply_type		wireless_charger_type;
 #endif
 
@@ -690,7 +714,7 @@ struct smb_charger {
 	struct votable		*fcc_main_votable;
 	struct votable		*fv_votable;
 	struct votable		*usb_icl_votable;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct votable		*dc_icl_votable;
 #endif
 	struct votable		*awake_votable;
@@ -702,7 +726,7 @@ struct smb_charger {
 	struct votable		*icl_irq_disable_votable;
 	struct votable		*limited_irq_disable_votable;
 	struct votable		*hdc_irq_disable_votable;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct votable		*cp_ilim_votable;
 #endif
 	struct votable		*temp_change_irq_disable_votable;
@@ -714,7 +738,7 @@ struct smb_charger {
 	struct work_struct	moisture_protection_work;
 	struct work_struct	chg_termination_work;
 	struct work_struct	dcin_aicl_work;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct work_struct	lpd_disable_chg_work;
 #endif
 	struct delayed_work	ps_change_timeout_work;
@@ -723,19 +747,19 @@ struct smb_charger {
 	struct delayed_work	pl_enable_work;
 	struct delayed_work	uusb_otg_work;
 	struct delayed_work	bb_removal_work;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct delayed_work	batt_verify_update_work;
 	struct delayed_work	raise_qc3_vbus_work;
 #endif
 	struct delayed_work	lpd_ra_open_work;
 	struct delayed_work	lpd_detach_work;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct delayed_work	charger_type_recheck;
 	struct delayed_work	cc_un_compliant_charge_work;
 	struct delayed_work	reg_work;
 #endif
 	struct delayed_work	thermal_regulation_work;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct delayed_work	conn_therm_work;
 	struct delayed_work	after_ffc_chg_dis_work;
 	struct delayed_work	after_ffc_chg_en_work;
@@ -748,13 +772,16 @@ struct smb_charger {
 	struct delayed_work	pr_lock_clear_work;
 	struct delayed_work	micro_usb_switch_work;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct delayed_work	check_vbus_work;
 	struct delayed_work     check_init_boot;
 	struct delayed_work	early_attach;
 	struct delayed_work	six_pin_batt_step_chg_work;
 	struct delayed_work	reduce_fcc_work;
 	struct delayed_work	thermal_setting_work;
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	struct delayed_work	check_vbat_work;
 #endif
 	struct alarm		lpd_recheck_timer;
 	struct alarm		moisture_protection_alarm;
@@ -769,7 +796,7 @@ struct smb_charger {
 	bool			sec_cp_present;
 	int			sec_chg_selected;
 	int			cp_reason;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			cp_mode;
 	int			cp_fcc;
 	int			cp_main_fcc;
@@ -779,7 +806,7 @@ struct smb_charger {
 	int			voltage_min_uv;
 	int			voltage_max_uv;
 	int			pd_active;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			apdo_max;
 	int			pd_verifed;
 #endif
@@ -787,7 +814,7 @@ struct smb_charger {
 	bool			pr_lock_in_progress;
 	bool			pr_swap_in_progress;
 	bool			early_usb_attach;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			early_dc_attach;
 	bool			batt_temp_irq_enabled;
 #endif
@@ -800,11 +827,11 @@ struct smb_charger {
 	bool			system_suspend_supported;
 	int			boost_threshold_ua;
 	int			system_temp_level;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			pps_thermal_level;
 #endif
 	int			thermal_levels;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			lpd_levels;
 	int			dc_temp_level;
 	int			dc_thermal_levels;
@@ -830,13 +857,13 @@ struct smb_charger {
 	int			dcp_icl_ua;
 	int			fake_capacity;
 	int			fake_batt_status;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			fake_conn_temp;
 #endif
 	bool			step_chg_enabled;
 	bool			sw_jeita_enabled;
 	bool			typec_legacy_use_rp_icl;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			lpd_enabled;
 #endif
 	bool			is_hdc;
@@ -860,7 +887,7 @@ struct smb_charger {
 	bool			hvdcp_disable;
 	int			hw_max_icl_ua;
 	int			auto_recharge_soc;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			auto_recharge_vbat;
 #endif
 	enum sink_src_mode	sink_src_mode;
@@ -872,7 +899,7 @@ struct smb_charger {
 	enum lpd_stage		lpd_stage;
 	bool			lpd_disabled;
 	enum lpd_reason		lpd_reason;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			lpd_status;
 #endif
 	bool			fcc_stepper_enable;
@@ -880,12 +907,12 @@ struct smb_charger {
 	int			smb_temp;
 	int			skin_temp;
 	int			connector_temp;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	u64			entry_time;
 #endif
 	int			thermal_status;
 	int			main_fcc_max;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			report_usb_absent;
 #endif
 	u32			jeita_soft_thlds[2];
@@ -918,12 +945,21 @@ struct smb_charger {
 	bool			dpdm_enabled;
 	bool			apsd_ext_timeout;
 	bool			qc3p5_detected;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			vbus_disable;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	bool			en_bq_flag;
+#endif
 	int64_t			rpp;
 	int64_t			cep;
 	int64_t			tx_bt_mac;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	int64_t			pen_bt_mac;
+#endif
 	int			reverse_chg_state;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	int			reverse_gpio_state;
+#endif
 #endif
 
 	/* workaround flag */
@@ -932,7 +968,7 @@ struct smb_charger {
 	int                     qc2_max_pulses;
 	enum qc2_non_comp_voltage qc2_unsupported_voltage;
 	bool			dbc_usbov;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			fake_usb_insertion;
 	bool			qc2_unsupported;
 	bool			check_vbus_once;
@@ -951,7 +987,7 @@ struct smb_charger {
 
 	int			die_health;
 	int			connector_health;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	/* raise qc3 vbus flag */
 	bool			qc_class_ab;
 	bool			is_qc_class_a;
@@ -983,7 +1019,7 @@ struct smb_charger {
 	int			micro_usb_pre_state;
 	bool			dcin_uusb_over_gpio_en;
 	bool			aicl_disable;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			wireless_vout;
 	int			flag_dc_present;
 	int			flag_cp_en;
@@ -999,6 +1035,9 @@ struct smb_charger {
 	bool			cc_un_compliant_detected;
 	bool			snk_debug_acc_detected;
 	bool			support_wireless;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	bool			wireless_bq;
+#endif
 	bool			support_conn_therm;
 	bool			ext_fg;
 	int			conn_detect_count;
@@ -1071,7 +1110,7 @@ int smblib_set_charge_param(struct smb_charger *chg,
 int smblib_set_usb_suspend(struct smb_charger *chg, bool suspend);
 int smblib_set_dc_suspend(struct smb_charger *chg, bool suspend);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_change_psns_to_curr(struct smb_charger *chg, int uv);
 #endif
 
@@ -1096,7 +1135,7 @@ int smblib_vconn_regulator_disable(struct regulator_dev *rdev);
 int smblib_vconn_regulator_is_enabled(struct regulator_dev *rdev);
 
 irqreturn_t default_irq_handler(int irq, void *data);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 irqreturn_t dcin_uv_handler(int irq, void *data);
 #endif
 irqreturn_t smb_en_irq_handler(int irq, void *data);
@@ -1126,7 +1165,7 @@ int smblib_get_prop_batt_present(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_batt_capacity(struct smb_charger *chg,
 				union power_supply_propval *val);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_get_prop_batt_capacity_level(struct smb_charger *chg,
 				union power_supply_propval *val);
 #endif
@@ -1142,7 +1181,7 @@ int smblib_get_prop_system_temp_level(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_system_temp_level_max(struct smb_charger *chg,
 				union power_supply_propval *val);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_get_prop_dc_temp_level(struct smb_charger *chg,
 				union power_supply_propval *val);
 #endif
@@ -1158,7 +1197,7 @@ int smblib_set_prop_batt_status(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_system_temp_level(struct smb_charger *chg,
 				const union power_supply_propval *val);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_set_prop_dc_temp_level(struct smb_charger *chg,
 				const union power_supply_propval *val);
 #endif
@@ -1181,7 +1220,7 @@ int smblib_get_prop_voltage_wls_output(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_set_prop_voltage_wls_output(struct smb_charger *chg,
 				const union power_supply_propval *val);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_get_prop_wireless_version(struct smb_charger *chg,
 				union power_supply_propval *val);
 #endif
@@ -1227,7 +1266,7 @@ int smblib_get_prop_input_current_max(struct smb_charger *chg,
 				  union power_supply_propval *val);
 int smblib_set_prop_thermal_overheat(struct smb_charger *chg,
 			       int therm_overheat);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_get_prop_vph_voltage_now(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_prop_connector_temp(struct smb_charger *chg);
@@ -1257,7 +1296,7 @@ int smblib_set_prop_ship_mode(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_rechg_soc_thresh(struct smb_charger *chg,
 				const union power_supply_propval *val);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_set_prop_rechg_vbat_thresh(struct smb_charger *chg,
 				const union power_supply_propval *val);
 #endif
@@ -1268,18 +1307,18 @@ int smblib_get_prop_fcc_delta(struct smb_charger *chg,
 				union power_supply_propval *val);
 int smblib_get_thermal_threshold(struct smb_charger *chg, u16 addr, int *val);
 int smblib_dp_dm(struct smb_charger *chg, int val);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_dp_dm_bq(struct smb_charger *chg, int val);
 #endif
 int smblib_disable_hw_jeita(struct smb_charger *chg, bool disable);
 int smblib_run_aicl(struct smb_charger *chg, int type);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_rerun_aicl(struct smb_charger *chg);
 #endif
 int smblib_set_icl_current(struct smb_charger *chg, int icl_ua);
 int smblib_get_icl_current(struct smb_charger *chg, int *icl_ua);
 int smblib_get_charge_current(struct smb_charger *chg, int *total_current_ua);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_get_charge_current_limit(struct smb_charger *chg,
 				int *total_current_ua);
 #endif
@@ -1299,7 +1338,7 @@ int smblib_configure_hvdcp_apsd(struct smb_charger *chg, bool enable);
 int smblib_icl_override(struct smb_charger *chg, enum icl_override_mode mode);
 enum alarmtimer_restart smblib_lpd_recheck_timer(struct alarm *alarm,
 				ktime_t time);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smblib_set_prop_wireless_wakelock(struct smb_charger *chg,
 				const union power_supply_propval *val);
 
@@ -1320,6 +1359,10 @@ int smblib_get_prop_liquid_status(struct smb_charger *chg,
 					union power_supply_propval *val);
 int smblib_set_prop_tx_mac(struct smb_charger *chg,
 				const union power_supply_propval *val);
+#ifdef CONFIG_MACH_XIAOMI_NABU
+void smblib_set_prop_pen_mac(struct smb_charger *chg,
+				const union power_supply_propval *val);
+#endif
 int smblib_set_prop_rx_cr(struct smb_charger *chg,
 				const union power_supply_propval *val);
 int smblib_set_prop_rx_cep(struct smb_charger *chg,
@@ -1339,7 +1382,7 @@ void smblib_apsd_enable(struct smb_charger *chg, bool enable);
 int smblib_force_vbus_voltage(struct smb_charger *chg, u8 val);
 int smblib_get_irq_status(struct smb_charger *chg,
 				union power_supply_propval *val);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int smb5_config_iterm(struct smb_charger *chg, int hi_thresh, int low_thresh);
 int smblib_get_prop_battery_charging_enabled(struct smb_charger *chg,
 				union power_supply_propval *val);
@@ -1353,10 +1396,14 @@ int smblib_get_prop_battery_bq_input_suspend(struct smb_charger *chg,
 					union power_supply_propval *val);
 #endif
 int smblib_get_qc3_main_icl_offset(struct smb_charger *chg, int *offset_ua);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 struct usbpd *smb_get_usbpd(void);
 #endif
 
 int smblib_init(struct smb_charger *chg);
 int smblib_deinit(struct smb_charger *chg);
+#ifdef CONFIG_MACH_XIAOMI_NABU
+int smblib_get_prop_wireless_fw_version(struct smb_charger *chg,
+					union power_supply_propval *val);
+#endif
 #endif /* __SMB5_CHARGER_H */

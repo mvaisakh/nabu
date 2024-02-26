@@ -92,7 +92,7 @@
 
 #define FULL_CAPACITY			100
 #define FULL_SOC_RAW			255
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define FULL_SOC_REPORT_THR		250
 #endif
 
@@ -101,7 +101,7 @@
 #define ESR_SOH_SOC			50
 #define EMPTY_SOC			0
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define VBAT_RESTART_FG_EMPTY_UV		3700000
 #define TEMP_THR_RESTART_FG		150
 #define RESTART_FG_START_WORK_MS		1000
@@ -346,11 +346,11 @@ struct fg_batt_props {
 	char		*batt_profile;
 	int		float_volt_uv;
 	int		vbatt_full_mv;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int		ffc_vbatt_full_mv;
 #endif
 	int		fastchg_curr_ma;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int		nom_cap_uah;
 #endif
 	int		*therm_coeffs;
@@ -358,7 +358,7 @@ struct fg_batt_props {
 	int		therm_pull_up_kohms;
 	int		*rslow_normal_coeffs;
 	int		*rslow_low_coeffs;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int		ffc_term_curr_ma;
 	int		ffc_low_temp_term_curr_ma;
 	int		ffc_high_temp_term_curr_ma;
@@ -446,7 +446,7 @@ static const struct fg_pt fg_tsmc_osc_table[] = {
 	{  90,		444992 },
 };
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define BATT_MA_AVG_SAMPLES		8
 struct batt_params {
 	bool		update_now;
@@ -471,7 +471,7 @@ struct fg_memif {
 	u8			num_bytes_per_word;
 };
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 struct cold_thermal {
 	int index;
 	int temp_l;
@@ -492,8 +492,9 @@ struct fg_dev {
 	struct power_supply	*dc_psy;
 	struct power_supply	*parallel_psy;
 	struct power_supply	*pc_port_psy;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct power_supply *max_verify_psy;
+	struct power_supply *max_verify_slave_psy;
 #endif
 	struct fg_irq_info	*irqs;
 	struct votable		*awake_votable;
@@ -518,7 +519,7 @@ struct fg_dev {
 	u32			mem_if_base;
 	u32			rradc_base;
 	u32			wa_flags;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			cycle_count;
 #endif
 	u32			esr_wakeup_ms;
@@ -538,7 +539,7 @@ struct fg_dev {
 	int			last_recharge_volt_mv;
 	int			delta_temp_irq_count;
 	enum esr_filter_status	esr_flt_sts;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			vbatt_full_volt_uv;
 	int			vbat_critical_low_count;
 #endif
@@ -552,12 +553,12 @@ struct fg_dev {
 	bool			use_ima_single_mode;
 	bool			usb_present;
 	bool			twm_state;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			report_full;
 #endif
 	bool			use_dma;
 	bool			qnovo_enable;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			empty_restart_fg;
 	bool			profile_already_find;
 	bool			input_present;
@@ -570,7 +571,7 @@ struct fg_dev {
 #endif
 	enum fg_version		version;
 	bool			suspended;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct batt_params	param;
 	struct delayed_work	soc_monitor_work;
 #endif
@@ -580,7 +581,7 @@ struct fg_dev {
 	struct work_struct	status_change_work;
 	struct work_struct	esr_sw_work;
 	struct delayed_work	sram_dump_work;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int			fake_authentic;
 	int			fake_chip_ok;
 	int			maxim_cycle_count;
@@ -589,7 +590,7 @@ struct fg_dev {
 	struct work_struct	esr_filter_work;
 	struct alarm		esr_filter_alarm;
 	ktime_t			last_delta_temp_time;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct delayed_work	empty_restart_fg_work;
 	struct delayed_work	soc_work;
 #endif

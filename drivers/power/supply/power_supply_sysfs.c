@@ -47,7 +47,7 @@ static const char * const power_supply_type_text[] = {
 	"USB_HVDCP", "USB_HVDCP_3", "USB_HVDCP_3P5", "Wireless", "USB_FLOAT",
 	"BMS", "Parallel", "Main", "Wipower", "USB_C_UFP", "USB_C_DFP",
 	"Charge_Pump",
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	"ZIMI_CAR_POWER","Batt_Verify"
 #endif
 };
@@ -165,7 +165,7 @@ static ssize_t power_supply_show_property(struct device *dev,
 	else if (off >= POWER_SUPPLY_PROP_MODEL_NAME)
 		return sprintf(buf, "%s\n", value.strval);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	else if ((off == POWER_SUPPLY_PROP_ROMID) || (off == POWER_SUPPLY_PROP_DS_STATUS))
 		return scnprintf(buf, PAGE_SIZE, "%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
 			value.arrayval[0], value.arrayval[1], value.arrayval[2], value.arrayval[3],
@@ -183,7 +183,7 @@ static ssize_t power_supply_show_property(struct device *dev,
 #endif
 	if (off == POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT)
 		return sprintf(buf, "%lld\n", value.int64val);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	else if (off == POWER_SUPPLY_PROP_WIRELESS_VERSION)
 		return scnprintf(buf, PAGE_SIZE, "0x%x\n",
 				value.intval);
@@ -202,6 +202,20 @@ static ssize_t power_supply_show_property(struct device *dev,
 	else if (off == POWER_SUPPLY_PROP_TX_MAC)
 		return scnprintf(buf, PAGE_SIZE, "%llx\n",
 				value.int64val);
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	else if (off == POWER_SUPPLY_PROP_PEN_MAC)
+		return scnprintf(buf, PAGE_SIZE, "%llx\n",
+				value.int64val);
+	else if (off ==  POWER_SUPPLY_PROP_REVERSE_PEN_SOC)
+		return scnprintf(buf, PAGE_SIZE, "%d\n",
+				value.intval);
+	else if (off ==  POWER_SUPPLY_PROP_REVERSE_CHG_STATE)
+		return scnprintf(buf, PAGE_SIZE, "%d\n",
+				value.intval);
+	else if (off == POWER_SUPPLY_PROP_REVERSE_PEN_CHG_STATE)
+		return scnprintf(buf, PAGE_SIZE, "%d\n",
+				value.intval);
+#endif
 	else if (off == POWER_SUPPLY_PROP_RX_CR)
 		return scnprintf(buf, PAGE_SIZE, "%llx\n",
 				value.int64val);
@@ -223,7 +237,7 @@ static ssize_t power_supply_store_property(struct device *dev,
 	struct power_supply *psy = dev_get_drvdata(dev);
 	const ptrdiff_t off = attr - power_supply_attrs;
 	union power_supply_propval value;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	long val;
 	int64_t num_long;
 #endif
@@ -248,7 +262,7 @@ static ssize_t power_supply_store_property(struct device *dev,
 	case POWER_SUPPLY_PROP_SCOPE:
 		ret = sysfs_match_string(power_supply_scope_text, buf);
 		break;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_BT_STATE:
 	case POWER_SUPPLY_PROP_RX_CR:
 		ret = kstrtol(buf, 16, &val);
@@ -263,6 +277,19 @@ static ssize_t power_supply_store_property(struct device *dev,
 		ret = val;
 		break;
 	case POWER_SUPPLY_PROP_TX_MAC:
+		ret = kstrtoll(buf, 16, &num_long);
+		if (ret < 0)
+			return ret;
+		value.int64val = num_long;
+		ret = power_supply_set_property(psy, off, &value);
+		if (ret < 0)
+			return ret;
+		else
+			return count;
+		break;
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	case POWER_SUPPLY_PROP_PEN_MAC:
 		ret = kstrtoll(buf, 16, &num_long);
 		if (ret < 0)
 			return ret;
@@ -333,7 +360,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(charge_now),
 	POWER_SUPPLY_ATTR(charge_avg),
 	POWER_SUPPLY_ATTR(charge_counter),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(termination_current),
 	POWER_SUPPLY_ATTR(ffc_termination_current),
 #endif
@@ -354,7 +381,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(capacity_alert_min),
 	POWER_SUPPLY_ATTR(capacity_alert_max),
 	POWER_SUPPLY_ATTR(capacity_level),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(shutdown_delay),
 	POWER_SUPPLY_ATTR(shutdown_delay_en),
 	POWER_SUPPLY_ATTR(raw_capacity),
@@ -385,7 +412,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(charge_enabled),
 	POWER_SUPPLY_ATTR(set_ship_mode),
 	POWER_SUPPLY_ATTR(real_type),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(hvdcp3_type),
 	POWER_SUPPLY_ATTR(quick_charge_type),
 #endif
@@ -427,7 +454,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(flash_trigger),
 	POWER_SUPPLY_ATTR(force_tlim),
 	POWER_SUPPLY_ATTR(dp_dm),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(dp_dm_bq),
 #endif
 	POWER_SUPPLY_ATTR(input_current_limited),
@@ -446,13 +473,13 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(typec_src_rp),
 	POWER_SUPPLY_ATTR(pd_allowed),
 	POWER_SUPPLY_ATTR(pd_active),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(pd_authentication),
 	POWER_SUPPLY_ATTR(pd_remove_compensation),
 #endif
 	POWER_SUPPLY_ATTR(pd_in_hard_reset),
 	POWER_SUPPLY_ATTR(pd_current_max),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(apdo_max),
 #endif
 	POWER_SUPPLY_ATTR(pd_usb_suspend_supported),
@@ -467,7 +494,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(parallel_mode),
 	POWER_SUPPLY_ATTR(die_health),
 	POWER_SUPPLY_ATTR(connector_health),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(connector_temp),
 	POWER_SUPPLY_ATTR(vbus_disable),
 #endif
@@ -480,13 +507,13 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(pd_voltage_max),
 	POWER_SUPPLY_ATTR(pd_voltage_min),
 	POWER_SUPPLY_ATTR(sdp_current_max),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(dc_thermal_levels),
 #endif
 	POWER_SUPPLY_ATTR(connector_type),
 	POWER_SUPPLY_ATTR(parallel_batfet_mode),
 	POWER_SUPPLY_ATTR(parallel_fcc_max),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(wireless_version),
 	POWER_SUPPLY_ATTR(signal_strength),
 	POWER_SUPPLY_ATTR(wireless_cp_en),
@@ -499,17 +526,20 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(rx_cep),
 	POWER_SUPPLY_ATTR(bt_state),
 #endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	POWER_SUPPLY_ATTR(pen_mac),
+#endif
 	POWER_SUPPLY_ATTR(min_icl),
 	POWER_SUPPLY_ATTR(moisture_detected),
 	POWER_SUPPLY_ATTR(batt_profile_version),
 	POWER_SUPPLY_ATTR(batt_full_current),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(battery_charging_limited),
 	POWER_SUPPLY_ATTR(slowly_charging),
 	POWER_SUPPLY_ATTR(bq_input_suspend),
 #endif
 	POWER_SUPPLY_ATTR(recharge_soc),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(recharge_vbat),
 	POWER_SUPPLY_ATTR(sys_termination_current),
 	POWER_SUPPLY_ATTR(ffc_sys_termination_current),
@@ -533,7 +563,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(maxim_batt_cycle_count),
 #endif
 	POWER_SUPPLY_ATTR(hvdcp_opti_allowed),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(fastcharge_mode),
 #endif
 	POWER_SUPPLY_ATTR(smb_en_mode),
@@ -545,7 +575,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(force_recharge),
 	POWER_SUPPLY_ATTR(fcc_stepper_enable),
 	POWER_SUPPLY_ATTR(toggle_stat),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(type_recheck),
 	POWER_SUPPLY_ATTR(liquid_detection),
 	POWER_SUPPLY_ATTR(dynamic_fv_enabled),
@@ -557,7 +587,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(batt_age_level),
 	POWER_SUPPLY_ATTR(voltage_vph),
 	POWER_SUPPLY_ATTR(chip_version),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(chip_ok),
 #endif
 	POWER_SUPPLY_ATTR(therm_icl_limit),
@@ -584,7 +614,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(cp_toggle_switcher),
 	POWER_SUPPLY_ATTR(cp_irq_status),
 	POWER_SUPPLY_ATTR(cp_ilim),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_ATTR(step_index),
 	/* Bq charge pump properties */
 	POWER_SUPPLY_ATTR(ti_battery_present),
@@ -606,14 +636,23 @@ static struct device_attribute power_supply_attrs[] = {
 #endif
 	POWER_SUPPLY_ATTR(irq_status),
 	POWER_SUPPLY_ATTR(parallel_output_mode),
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if (defined CONFIG_MACH_XIAOMI_VAYU || CONFIG_MACH_XIAOMI_NABU)
 	/* DIV 2 properties */
 	POWER_SUPPLY_ATTR(div_2_mode),
 	POWER_SUPPLY_ATTR(reverse_chg_mode),
 	POWER_SUPPLY_ATTR(reverse_chg_state),
+	POWER_SUPPLY_ATTR(reverse_pen_chg_state),
+	POWER_SUPPLY_ATTR(reverse_gpio_state),
 	POWER_SUPPLY_ATTR(reset_div_2_mode),
 	POWER_SUPPLY_ATTR(rx_op_ble),
 	POWER_SUPPLY_ATTR(op_ble),
+	POWER_SUPPLY_ATTR(aicl_enable),
+	POWER_SUPPLY_ATTR(otg_state),
+	POWER_SUPPLY_ATTR(reverse_chg_hall3),
+	POWER_SUPPLY_ATTR(reverse_chg_hall4),
+	POWER_SUPPLY_ATTR(reverse_pen_soc),
+	POWER_SUPPLY_ATTR(reverse_vout),
+	POWER_SUPPLY_ATTR(reverse_iout),
 #endif
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),

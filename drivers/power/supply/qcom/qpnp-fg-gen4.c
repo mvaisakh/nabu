@@ -23,7 +23,7 @@
 #include <linux/qpnp/qpnp-pbs.h>
 #include <linux/qpnp/qpnp-revid.h>
 #include <linux/thermal.h>
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #include <linux/syscalls.h>
 #endif
 #include "fg-core.h"
@@ -212,7 +212,7 @@
 #define FIRST_LOG_CURRENT_v2_WORD	471
 #define FIRST_LOG_CURRENT_v2_OFFSET	0
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define DEFAULT_FFC_TERM_CURRENT	1500
 #endif
 static struct fg_irq_info fg_irqs[FG_GEN4_IRQ_MAX];
@@ -228,7 +228,7 @@ struct fg_dt_props {
 	bool	esr_calib_dischg;
 	bool	soc_hi_res;
 	bool	soc_scale_mode;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool	shutdown_delay_enable;
 	int	*dec_rate_seq;
 	int	dec_rate_len;
@@ -238,7 +238,7 @@ struct fg_dt_props {
 	int	sys_min_volt_mv;
 	int	cutoff_curr_ma;
 	int	sys_term_curr_ma;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int	ffc_sys_term_curr_ma;
 #endif
 	int	delta_soc_thr;
@@ -268,7 +268,7 @@ struct fg_dt_props {
 	int	ki_coeff_hi_chg;
 	int	ki_coeff_lo_med_chg_thr_ma;
 	int	ki_coeff_med_hi_chg_thr_ma;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int	ffc_ki_coeff_lo_med_chg_thr_ma;
 	int	ffc_ki_coeff_med_hi_chg_thr_ma;
 #endif
@@ -298,18 +298,26 @@ struct fg_gen4_chip {
 	struct votable		*parallel_current_en_votable;
 	struct votable		*mem_attn_irq_en_votable;
 	struct work_struct	esr_calib_work;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
     struct work_struct	vbat_sync_work;
 #endif
 	struct work_struct	soc_scale_work;
 	struct alarm		esr_fast_cal_timer;
 	struct alarm		soc_scale_alarm_timer;
 	struct delayed_work	pl_enable_work;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	struct delayed_work	battery_authentic_work;
 	int			battery_authentic_result;
+	int                     battery_authentic_slave_result;
+    int			battery_chip_ok;
+    int			battery_chip_slave_ok;
 	struct delayed_work	ds_romid_work;
 	unsigned char		ds_romid[8];
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	unsigned char		ds_slave_romid[8];
+	unsigned char		ds_slave_status[8];
+	unsigned char		ds_slave_page0[16];
+#endif
 	struct delayed_work	ds_status_work;
 	unsigned char		ds_status[8];
 	struct delayed_work	ds_page0_work;
@@ -355,7 +363,7 @@ struct fg_gen4_chip {
 	bool			vbatt_low;
 	bool			soc_scale_mode;
 	bool			chg_term_good;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool			fastcharge_mode_enabled;
 	bool			cold_thermal_support;
 #endif
@@ -372,7 +380,7 @@ module_param_named(
 	debug_mask, fg_gen4_debug_mask, int, 0600
 );
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static bool is_batt_vendor_sunwoda;
 static bool is_batt_vendor_nvt;
 #endif
@@ -780,7 +788,7 @@ static int fg_gen4_get_battery_temp(struct fg_dev *fg, int *val)
 	int rc = 0;
 	u16 buf;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (fg->batt_fake_temp != -EINVAL) {
 		*val = fg->batt_fake_temp;
 		pr_err("use fake batt temp =%d\n", fg->batt_fake_temp);
@@ -964,7 +972,7 @@ static int fg_gen4_get_prop_capacity(struct fg_dev *fg, int *val)
 		return 0;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	rc = fg_get_msoc(fg, &msoc);
 	if (rc < 0)
 		return rc;
@@ -1029,7 +1037,7 @@ static int fg_gen4_get_prop_capacity_raw(struct fg_gen4_chip *chip, int *val)
 	return 0;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static int fg_gen4_get_prop_soc_decimal_rate(struct fg_gen4_chip *chip, int *val)
 {
 	struct fg_dev *fg = &chip->fg;
@@ -1787,7 +1795,7 @@ static int fg_gen4_rapid_soc_config(struct fg_gen4_chip *chip, bool en)
 	return 0;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 int retry_batt_profile;
 #define BATT_PROFILE_RETRY_COUNT_MAX 5
 #endif
@@ -1810,15 +1818,21 @@ static int fg_gen4_get_batt_profile(struct fg_dev *fg)
 					fg->batt_id_ohms / 1000,
 					chip->batt_age_level, &avail_age_level);
 	else
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	{
 		profile_node = ERR_PTR(-ENXIO);
 		/* if cmdline battery profile vendor is passed to fg driver, use cmdline result */
 		if (is_batt_vendor_sunwoda && !fg->profile_already_find) {
 			pr_err("is_batt_vendor_sunwoda is %d\n", is_batt_vendor_sunwoda);
 			fg->profile_already_find = true;
+#ifdef CONFIG_MACH_XIAOMI_VAYU
 			profile_node = of_batterydata_get_best_profile(batt_node, // comment for git
 					fg->batt_id_ohms / 1000, "J20S_sunwoda_5160mah");
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+			profile_node = of_batterydata_get_best_profile(batt_node,
+					fg->batt_id_ohms / 1000, "K82_sunwoda_8720mah");
+#endif
 		} else if (is_batt_vendor_nvt && !fg->profile_already_find) {
 			pr_err("is_batt_vendor_nvt is %d\n", is_batt_vendor_nvt);
 			fg->profile_already_find = true;
@@ -1831,8 +1845,15 @@ static int fg_gen4_get_batt_profile(struct fg_dev *fg)
 		if ((chip->ds_romid[0] == 0x9F) && ((chip->ds_romid[5] & 0xF0) == 0xF0)
 				&& (chip->ds_romid[6] == 04) && !fg->profile_already_find) {
 			if ((chip->ds_page0[0] == 'S') || (chip->ds_page0[0] == 'X')) {
+#ifdef CONFIG_MACH_XIAOMI_VAYU
 				profile_node = of_batterydata_get_best_profile(batt_node, // comment for git
 					fg->batt_id_ohms / 1000, "J20S_sunwoda_5160mah");
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+
+				profile_node = of_batterydata_get_best_profile(batt_node,
+					fg->batt_id_ohms / 1000, "K82_sunwoda_8720mah");
+#endif
 			} else if ((chip->ds_page0[0] == 'N') || (chip->ds_page0[0] == 'A')) {
 				profile_node = of_batterydata_get_best_profile(batt_node, // comment for git
 					fg->batt_id_ohms / 1000, "J20S_nvt_5160mah");
@@ -1851,9 +1872,16 @@ static int fg_gen4_get_batt_profile(struct fg_dev *fg)
 				schedule_delayed_work(&fg->profile_load_work, 500);
 			}
 		} else if (!fg->profile_already_find) {
+#ifdef CONFIG_MACH_XIAOMI_VAYU
 				pr_warn("verifty battery fail. use default profile J20S_nvt_5160mah\n");
 				profile_node = of_batterydata_get_best_profile(batt_node, // comment for git
 						fg->batt_id_ohms / 1000, "J20S_nvt_5160mah");
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+				pr_warn("verifty battery fail. use default profile K82_sunwoda_8720mah\n");
+				profile_node = of_batterydata_get_best_profile(batt_node,
+						fg->batt_id_ohms / 1000, "K82_sunwoda_8720mah");
+#endif
 		}
 	}
 #else
@@ -1918,7 +1946,7 @@ static int fg_gen4_get_batt_profile(struct fg_dev *fg)
 		fg->bp.fastchg_curr_ma = -EINVAL;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	rc = of_property_read_u32(profile_node, "qcom,ffc-low-temp-term-current-ma",
 			&fg->bp.ffc_low_temp_term_curr_ma);
 	if (rc < 0) {
@@ -1941,7 +1969,7 @@ static int fg_gen4_get_batt_profile(struct fg_dev *fg)
 		fg->bp.vbatt_full_mv = -EINVAL;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	rc = of_property_read_u32(profile_node, "qcom,fg-ffc-cc-cv-threshold-mv",
 			&fg->bp.ffc_vbatt_full_mv);
 	if (rc < 0) {
@@ -2925,7 +2953,7 @@ static int fg_gen4_adjust_recharge_soc(struct fg_gen4_chip *chip)
 	if (is_input_present(fg)) {
 		if (fg->charge_done) {
 			if (!fg->recharge_soc_adjusted) {
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 				if (fg->health == POWER_SUPPLY_HEALTH_GOOD)
 					return 0;
 #endif
@@ -3598,7 +3626,7 @@ static irqreturn_t fg_vbatt_low_irq_handler(int irq, void *data)
 	int rc, vbatt_mv, msoc_raw;
 	s64 time_us;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	schedule_work(&chip->vbat_sync_work);
 #endif
 	rc = fg_get_battery_voltage(fg, &vbatt_mv);
@@ -3629,7 +3657,7 @@ static irqreturn_t fg_vbatt_low_irq_handler(int irq, void *data)
 
 	if (vbatt_mv < chip->dt.cutoff_volt_mv) {
 		if (chip->dt.rapid_soc_dec_en) {
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 			/*
 			 * Set vbat_low debounce window to avoid shutdown in low temperature and high
 			 * current scene, we set the counter to maxium 5, if fg_vbatt_low_irq trigger
@@ -3791,7 +3819,7 @@ static irqreturn_t fg_delta_bsoc_irq_handler(int irq, void *data)
 
 #define CENTI_FULL_SOC		10000
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static bool fg_is_input_suspend(struct fg_dev *fg)
 {
 	int rc = 0;
@@ -3823,7 +3851,7 @@ static irqreturn_t fg_delta_msoc_irq_handler(int irq, void *data)
 	int rc, batt_soc, batt_temp, msoc_raw;
 	bool input_present = is_input_present(fg);
 	u32 batt_soc_cp;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	bool input_suspend = false;
 #endif
 
@@ -3834,7 +3862,7 @@ static irqreturn_t fg_delta_msoc_irq_handler(int irq, void *data)
 
 	get_batt_psy_props(fg);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	input_suspend = fg_is_input_suspend(fg);
 #endif
 
@@ -3843,7 +3871,7 @@ static irqreturn_t fg_delta_msoc_irq_handler(int irq, void *data)
 		pr_err("Failed to read battery soc rc: %d\n", rc);
 	else
 		cycle_count_update(chip->counter, (u32)batt_soc >> 24,
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 			fg->charge_status, fg->charge_done, (input_present & (!input_suspend)));
 #else
 			fg->charge_status, fg->charge_done, input_present);
@@ -4282,7 +4310,7 @@ static void pl_current_en_work(struct work_struct *work)
 		return;
 
 	vote(chip->parallel_current_en_votable, FG_PARALLEL_EN_VOTER, en, 0);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	/* qcom patch to fix pm8150b ADC EOC bit not set issue */
 	vote(chip->mem_attn_irq_en_votable, MEM_ATTN_IRQ_VOTER, false, 0);
 #endif
@@ -4302,7 +4330,7 @@ static void pl_enable_work(struct work_struct *work)
 	vote(fg->awake_votable, ESR_FCC_VOTER, false, 0);
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static void vbat_sync_work(struct work_struct *work)
 {
 	pr_err("sys_sync:vbat_sync_work\n");
@@ -4468,7 +4496,7 @@ static void status_change_work(struct work_struct *work)
 	int rc, batt_soc, batt_temp;
 	bool input_present, qnovo_en;
 	u32 batt_soc_cp;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int msoc_raw;
 	bool input_suspend = false;
 #endif
@@ -4496,7 +4524,7 @@ static void status_change_work(struct work_struct *work)
 
 	get_batt_psy_props(fg);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (fg->charge_done && !fg->report_full) {
 		fg->report_full = true;
 	} else if (!fg->charge_done && fg->report_full) {
@@ -4521,13 +4549,13 @@ static void status_change_work(struct work_struct *work)
 	}
 
 	input_present = is_input_present(fg);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	fg->input_present = input_present;
 	input_suspend = fg_is_input_suspend(fg);
 #endif
 	qnovo_en = is_qnovo_en(fg);
 	cycle_count_update(chip->counter, (u32)batt_soc >> 24,
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 		fg->charge_status, fg->charge_done, (input_present & (!input_suspend)));
 #else
 		fg->charge_status, fg->charge_done, input_present);
@@ -4579,7 +4607,7 @@ out:
 	pm_relax(fg->dev);
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define NORMAL_VOLTAGE_UV_THR			3700000
 static int fg_get_cold_thermal_level(struct fg_dev *fg)
 {
@@ -4815,7 +4843,7 @@ static struct kernel_param_ops fg_esr_cal_ops = {
 module_param_cb(esr_fast_cal_en, &fg_esr_cal_ops, &fg_esr_fast_cal_en, 0644);
 
 /* All power supply functions here */
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static int fg_gen4_set_vbatt_full_vol(struct fg_dev *fg, bool enable_ffc)
 {
 	int rc;
@@ -4913,11 +4941,20 @@ static int fg_get_ffc_iterm_for_chg(struct fg_dev *fg)
 		ffc_chg_iterm = fg->bp.ffc_low_temp_term_curr_ma;
 	else
 		ffc_chg_iterm = fg->bp.ffc_high_temp_term_curr_ma;
+	
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	if (ffc_chg_iterm == 0) {
+		if (batt_temp < 350)
+			ffc_chg_iterm = -1278;
+		else
+			ffc_chg_iterm = -1363;
+	}
+#endif
        return ffc_chg_iterm;
 }
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define SHUTDOWN_DELAY_VOL	3300
 #endif
 static int fg_psy_get_property(struct power_supply *psy,
@@ -4928,13 +4965,13 @@ static int fg_psy_get_property(struct power_supply *psy,
 	struct fg_dev *fg = &chip->fg;
 	int rc = 0, val;
 	int64_t temp;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int vbatt_uv;
 	static bool shutdown_delay_cancel;
 	static bool last_shutdown_delay;
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	union power_supply_propval b_val = {0,};
 
 	if (fg->max_verify_psy == NULL) {
@@ -4943,6 +4980,15 @@ static int fg_psy_get_property(struct power_supply *psy,
 			pr_err("max_verify_psy is NULL\n");
 		}
 	}
+
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	if (fg->max_verify_slave_psy == NULL) {
+        	fg->max_verify_slave_psy = power_supply_get_by_name("batt_verify_slave");
+            if (fg->max_verify_slave_psy == NULL) {
+                    pr_err("max_verify_slave_psy is NULL\n");
+                }
+        }
+#endif
 #endif
 
 	switch (psp) {
@@ -5000,9 +5046,98 @@ static int fg_psy_get_property(struct power_supply *psy,
 		memcpy(chip->ds_page0, b_val.arrayval, 16);
 		break;
 #endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	case POWER_SUPPLY_PROP_AUTHENTIC:
+		if (fg->fake_authentic != -EINVAL) {
+			pval->intval = fg->fake_authentic;
+			break;
+		}
+
+		if (fg->max_verify_psy == NULL)
+			return -ENODATA;
+                if (fg->max_verify_slave_psy == NULL)
+                        return -ENODATA;
+		rc = power_supply_get_property(fg->max_verify_psy,
+					POWER_SUPPLY_PROP_AUTHEN_RESULT, &b_val);
+                chip->battery_authentic_result = b_val.intval;
+                rc = power_supply_get_property(fg->max_verify_slave_psy,
+                                        POWER_SUPPLY_PROP_AUTHEN_RESULT, &b_val);
+                chip->battery_authentic_slave_result = b_val.intval;
+                if (chip->battery_authentic_result == 1 && chip->battery_authentic_slave_result == 1) {
+			pval->intval = 1;
+                } else {
+			pval->intval = 0;
+                }
+		break;
+	case POWER_SUPPLY_PROP_ROMID:
+		if (fg->max_verify_psy == NULL)
+			return -ENODATA;
+		if (fg->max_verify_slave_psy == NULL)
+                        return -ENODATA;
+
+                rc = power_supply_get_property(fg->max_verify_psy,
+                                        POWER_SUPPLY_PROP_ROMID, &b_val);
+		memcpy(pval->arrayval, b_val.arrayval, 8);
+		memcpy(chip->ds_romid, b_val.arrayval, 8);
+		rc = power_supply_get_property(fg->max_verify_slave_psy,
+					POWER_SUPPLY_PROP_ROMID, &b_val);
+		memcpy(chip->ds_slave_romid, b_val.arrayval, 8);
+		break;
+	case POWER_SUPPLY_PROP_CHIP_OK:
+		if (fg->fake_chip_ok != -EINVAL) {
+			pval->intval = fg->fake_chip_ok;
+			break;
+		}
+		if (fg->max_verify_psy == NULL)
+			return -ENODATA;
+		if (fg->max_verify_slave_psy == NULL)
+                        return -ENODATA;
+
+		rc = power_supply_get_property(fg->max_verify_psy,
+					POWER_SUPPLY_PROP_CHIP_OK, &b_val);
+		chip->battery_chip_ok = b_val.intval;
+		pval->intval = b_val.intval;
+                rc = power_supply_get_property(fg->max_verify_slave_psy,
+                                        POWER_SUPPLY_PROP_CHIP_OK, &b_val);
+                chip->battery_chip_slave_ok = b_val.intval;
+                if (chip->battery_chip_ok == 1 && chip->battery_chip_slave_ok == 1) {
+			pval->intval = 1;
+                } else {
+			pval->intval = 0;
+		}
+		break;
+	case POWER_SUPPLY_PROP_DS_STATUS:
+		if (fg->max_verify_psy == NULL)
+			return -ENODATA;
+		if (fg->max_verify_slave_psy == NULL)
+                        return -ENODATA;
+
+		rc = power_supply_get_property(fg->max_verify_psy,
+					POWER_SUPPLY_PROP_DS_STATUS, &b_val);
+		memcpy(pval->arrayval, b_val.arrayval, 8);
+		memcpy(chip->ds_status, b_val.arrayval, 8);
+		rc = power_supply_get_property(fg->max_verify_slave_psy,
+                                        POWER_SUPPLY_PROP_DS_STATUS, &b_val);
+		memcpy(chip->ds_slave_status, b_val.arrayval, 8);
+		break;
+	case POWER_SUPPLY_PROP_PAGE0_DATA:
+		if (fg->max_verify_psy == NULL)
+			return -ENODATA;
+		if (fg->max_verify_slave_psy == NULL)
+                        return -ENODATA;
+
+		rc = power_supply_get_property(fg->max_verify_psy,
+					POWER_SUPPLY_PROP_PAGE0_DATA, &b_val);
+		memcpy(pval->arrayval, b_val.arrayval, 16);
+		memcpy(chip->ds_page0, b_val.arrayval, 16);
+		rc = power_supply_get_property(fg->max_verify_slave_psy,
+                                        POWER_SUPPLY_PROP_PAGE0_DATA, &b_val);
+		memcpy(chip->ds_slave_page0, b_val.arrayval, 16);
+		break;
+#endif
 	case POWER_SUPPLY_PROP_CAPACITY:
 		rc = fg_gen4_get_prop_capacity(fg, &pval->intval);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 		//Using smooth battery capacity.
 		if (fg->param.batt_soc >= 0 && !chip->rapid_soc_dec_en)
 			pval->intval = fg->param.batt_soc;
@@ -5043,7 +5178,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CAPACITY_RAW:
 		rc = fg_gen4_get_prop_capacity_raw(chip, &pval->intval);
 		break;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_SHUTDOWN_DELAY:
 		pval->intval = fg->shutdown_delay;
 		break;
@@ -5114,7 +5249,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 			pval->intval = (int)temp;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 		if (-EINVAL != fg->bp.nom_cap_uah) {
 			pval->intval = fg->bp.nom_cap_uah * 1000;
 		} else {
@@ -5122,7 +5257,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 		rc = fg_gen4_get_nominal_capacity(chip, &temp);
 		if (!rc)
 			pval->intval = (int)temp;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 		}
 #endif
 		break;
@@ -5178,7 +5313,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CC_STEP_SEL:
 		pval->intval = chip->ttf->cc_step.sel;
 		break;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_COLD_THERMAL_LEVEL:
 		if(chip->cold_thermal_support) {
 			pval->intval = fg_get_cold_thermal_level(fg);
@@ -5202,7 +5337,7 @@ static int fg_psy_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CALIBRATE:
 		pval->intval = chip->calib_level;
 		break;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_FASTCHARGE_MODE:
 		pval->intval = chip->fastcharge_mode_enabled;
 		break;
@@ -5293,7 +5428,7 @@ static int fg_psy_set_property(struct power_supply *psy,
 		if (chip->sp)
 			soh_profile_update(chip->sp, chip->soh);
 		break;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_CYCLE_COUNT:
 		rc = set_cycle_count(chip->counter, pval->intval);
 		pr_info("Cycle count is modified to %d by userspace\n", pval->intval);
@@ -5322,7 +5457,7 @@ static int fg_psy_set_property(struct power_supply *psy,
 		chip->batt_age_level = pval->intval;
 		schedule_delayed_work(&fg->profile_load_work, 0);
 		break;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
 		if (fg->vbatt_full_volt_uv != pval->intval)
 			rc = fg_set_constant_chg_voltage(fg, pval->intval);
@@ -5341,7 +5476,7 @@ static int fg_psy_set_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CALIBRATE:
 		rc = fg_gen4_set_calibrate_level(chip, pval->intval);
 		break;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_FASTCHARGE_MODE:
 		chip->fastcharge_mode_enabled = pval->intval;
 		break;
@@ -5384,17 +5519,17 @@ static int fg_property_is_writeable(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_ESR_ACTUAL:
 	case POWER_SUPPLY_PROP_ESR_NOMINAL:
 	case POWER_SUPPLY_PROP_SOH:
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_CYCLE_COUNT:
 #endif
 	case POWER_SUPPLY_PROP_CLEAR_SOH:
 	case POWER_SUPPLY_PROP_BATT_AGE_LEVEL:
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE:
 	case POWER_SUPPLY_PROP_COLD_THERMAL_LEVEL:
 #endif
 	case POWER_SUPPLY_PROP_CALIBRATE:
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	case POWER_SUPPLY_PROP_FASTCHARGE_MODE:
 	case POWER_SUPPLY_PROP_SYS_TERMINATION_CURRENT:
 	case POWER_SUPPLY_PROP_VBATT_FULL_VOL:
@@ -5412,7 +5547,7 @@ static int fg_property_is_writeable(struct power_supply *psy,
 }
 
 static enum power_supply_property fg_psy_props[] = {
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_PROP_AUTHENTIC,
 	POWER_SUPPLY_PROP_ROMID,
 	POWER_SUPPLY_PROP_DS_STATUS,
@@ -5421,7 +5556,7 @@ static enum power_supply_property fg_psy_props[] = {
 #endif
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_REAL_CAPACITY,
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_PROP_SHUTDOWN_DELAY,
 	POWER_SUPPLY_PROP_SOC_DECIMAL,
 	POWER_SUPPLY_PROP_SOC_DECIMAL_RATE,
@@ -5446,7 +5581,7 @@ static enum power_supply_property fg_psy_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_FULL,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER_SHADOW,
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_PROP_CYCLE_COUNT,
 #endif
 	POWER_SUPPLY_PROP_CYCLE_COUNTS,
@@ -5460,7 +5595,7 @@ static enum power_supply_property fg_psy_props[] = {
 	POWER_SUPPLY_PROP_TIME_TO_EMPTY_AVG,
 	POWER_SUPPLY_PROP_CC_STEP,
 	POWER_SUPPLY_PROP_CC_STEP_SEL,
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_PROP_COLD_THERMAL_LEVEL,
 #endif
 	POWER_SUPPLY_PROP_BATT_AGE_LEVEL,
@@ -5468,7 +5603,7 @@ static enum power_supply_property fg_psy_props[] = {
 	POWER_SUPPLY_PROP_POWER_AVG,
 	POWER_SUPPLY_PROP_SCALE_MODE_EN,
 	POWER_SUPPLY_PROP_CALIBRATE,
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	POWER_SUPPLY_PROP_FASTCHARGE_MODE,
 	POWER_SUPPLY_PROP_FFC_TERMINATION_CURRENT,
 	POWER_SUPPLY_PROP_SYS_TERMINATION_CURRENT,
@@ -6281,7 +6416,7 @@ static int fg_parse_ki_coefficients(struct fg_dev *fg)
 	of_property_read_u32(node, "qcom,ki-coeff-chg-med-hi-thresh-ma",
 		&chip->dt.ki_coeff_med_hi_chg_thr_ma);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->dt.ffc_ki_coeff_lo_med_chg_thr_ma = -EINVAL;
 	of_property_read_u32(node, "qcom,ffc-ki-coeff-chg-low-med-thresh-ma",
 		&chip->dt.ffc_ki_coeff_lo_med_chg_thr_ma);
@@ -6463,7 +6598,7 @@ static int fg_gen4_parse_nvmem_dt(struct fg_gen4_chip *chip)
 #define DEFAULT_EMPTY_VOLT_MV		2812
 #define DEFAULT_SYS_MIN_VOLT_MV		2800
 #define DEFAULT_SYS_TERM_CURR_MA	-125
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define DEFAULT_FFC_SYS_TERM_CURR_MA        -1125
 #endif
 #define DEFAULT_CUTOFF_CURR_MA		200
@@ -6477,7 +6612,7 @@ static int fg_gen4_parse_nvmem_dt(struct fg_gen4_chip *chip)
 #define DEFAULT_CL_MAX_LIM_DECIPERC	0
 #define DEFAULT_CL_DELTA_BATT_SOC	10
 #define BTEMP_DELTA_LOW			0
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define BTEMP_DELTA_HIGH		10
 #else
 #define BTEMP_DELTA_HIGH		3
@@ -6493,7 +6628,7 @@ static int fg_gen4_parse_dt(struct fg_gen4_chip *chip)
 	u32 base, temp;
 	u8 subtype;
 	int rc;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int size;
 #endif
 
@@ -6618,7 +6753,7 @@ static int fg_gen4_parse_dt(struct fg_gen4_chip *chip)
 	else
 		chip->dt.sys_term_curr_ma = temp;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	rc = of_property_read_u32(node, "qcom,fg-ffc-sys-term-current", &temp);
         if (rc < 0)
                 chip->dt.ffc_sys_term_curr_ma = DEFAULT_FFC_SYS_TERM_CURR_MA;
@@ -6638,7 +6773,7 @@ static int fg_gen4_parse_dt(struct fg_gen4_chip *chip)
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	size = 0;
 	of_get_property(node, "qcom,soc_decimal_rate", &size);
 	if (size) {
@@ -6694,7 +6829,7 @@ static int fg_gen4_parse_dt(struct fg_gen4_chip *chip)
 	chip->dt.force_load_profile = of_property_read_bool(node,
 					"qcom,fg-force-load-profile");
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->dt.shutdown_delay_enable = of_property_read_bool(node,
 						"qcom,shutdown-delay-enable");
 #endif
@@ -6852,7 +6987,7 @@ static int fg_gen4_parse_dt(struct fg_gen4_chip *chip)
 	of_property_read_u32(node, "qcom,fg-sys-min-voltage",
 				&chip->dt.sys_min_volt_mv);
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	chip->cold_thermal_support = of_property_read_bool(node,
 			"qcom,cold-thermal-support");
 
@@ -6882,7 +7017,7 @@ static int fg_gen4_parse_dt(struct fg_gen4_chip *chip)
 	return 0;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define SOC_WORK_MS     20000
 static void soc_work_fn(struct work_struct *work)
 {
@@ -7094,7 +7229,13 @@ static void fg_battery_soc_smooth_tracking(struct fg_gen4_chip *chip)
 			last_batt_soc = fg->param.update_now ?
 				fg->param.batt_raw_soc : last_batt_soc + soc_changed;
 		else if (last_batt_soc > fg->param.batt_raw_soc
+#ifdef CONFIG_MACH_XIAOMI_VAYU
 					&& fg->param.batt_ma > 0)
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+					&& fg->param.batt_ma > 0
+					&& fg->charge_status != POWER_SUPPLY_STATUS_FULL)
+#endif
 			/* Battery in discharging status
 			* update the soc when resuming device
 			*/
@@ -7201,11 +7342,11 @@ static void fg_gen4_cleanup(struct fg_gen4_chip *chip)
 		fg_gen4_exit_soc_scale(chip);
 
 	cancel_delayed_work_sync(&fg->profile_load_work);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	cancel_delayed_work_sync(&fg->empty_restart_fg_work);
 #endif
 	cancel_delayed_work_sync(&fg->sram_dump_work);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	cancel_delayed_work_sync(&fg->soc_work);
 #endif
 	cancel_work_sync(&chip->pl_current_en_work);
@@ -7259,7 +7400,7 @@ static void fg_gen4_post_init(struct fg_gen4_chip *chip)
 	fg_dbg(fg, FG_STATUS, "Disabled wakeable irqs for debug board\n");
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 #define IBAT_OLD_WORD		317
 #define IBAT_OLD_OFFSET		0
 #define BATT_CURRENT_NUMR		488281
@@ -7311,20 +7452,34 @@ static int fg_gen4_probe(struct platform_device *pdev)
 	chip->ki_coeff_full_soc[0] = -EINVAL;
 	chip->ki_coeff_full_soc[1] = -EINVAL;
 	chip->esr_soh_cycle_count = -EINVAL;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	fg->vbat_critical_low_count = 0;
 	fg->vbatt_full_volt_uv = 0;
 	fg->curr_cold_thermal_level = 1;
 #endif
 	chip->calib_level = -EINVAL;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	fg->fake_authentic = -EINVAL;
 	fg->fake_chip_ok = -EINVAL;
 	fg->batt_fake_temp = -EINVAL;
 	chip->battery_authentic_result = -EINVAL;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	chip->battery_authentic_slave_result = -EINVAL;
+	chip->battery_chip_ok = -EINVAL;
+	chip->battery_chip_slave_ok = -EINVAL;
+#endif
 	memset(chip->ds_romid, 0, 8);
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	memset(chip->ds_slave_romid, 0, 8);
+#endif
 	memset(chip->ds_status, 0, 8);
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	memset(chip->ds_slave_status, 0, 8);
+#endif
 	memset(chip->ds_page0, 0, 16);
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	memset(chip->ds_slave_page0, 0, 16);
+#endif
 	retry_batt_profile = 0;
 	retry_battery_authentic_result = 0;
 	retry_ds_romid = 0;
@@ -7347,19 +7502,19 @@ static int fg_gen4_probe(struct platform_device *pdev)
 	init_completion(&chip->mem_attn);
 	INIT_WORK(&fg->status_change_work, status_change_work);
 	INIT_WORK(&chip->esr_calib_work, esr_calib_work);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
     INIT_WORK(&chip->vbat_sync_work, vbat_sync_work);
 #endif
 	INIT_WORK(&chip->soc_scale_work, soc_scale_work);
 	INIT_DELAYED_WORK(&fg->profile_load_work, profile_load_work);
 	INIT_DELAYED_WORK(&fg->sram_dump_work, sram_dump_work);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	INIT_DELAYED_WORK(&fg->soc_work, soc_work_fn);
 	INIT_DELAYED_WORK(&fg->empty_restart_fg_work, empty_restart_fg_work);
 #endif
 	INIT_DELAYED_WORK(&chip->pl_enable_work, pl_enable_work);
 	INIT_WORK(&chip->pl_current_en_work, pl_current_en_work);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	INIT_DELAYED_WORK(&fg->soc_monitor_work, soc_monitor_work);
 	INIT_DELAYED_WORK(&chip->battery_authentic_work, battery_authentic_work);
 	INIT_DELAYED_WORK(&chip->ds_romid_work, ds_romid_work);
@@ -7463,8 +7618,11 @@ static int fg_gen4_probe(struct platform_device *pdev)
 		goto exit;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	fg->max_verify_psy = power_supply_get_by_name("batt_verify");
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	fg->max_verify_slave_psy = power_supply_get_by_name("batt_verify_slave");
+#endif
 #endif
 	/* Register the power supply */
 	fg_psy_cfg.drv_data = fg;
@@ -7481,6 +7639,12 @@ static int fg_gen4_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_MACH_XIAOMI_VAYU
 	if (chip->battery_authentic_result != true) {
+		schedule_delayed_work(&chip->battery_authentic_work,
+				msecs_to_jiffies(0));
+	}
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	if (chip->battery_authentic_result != true || chip->battery_authentic_slave_result != true) {
 		schedule_delayed_work(&chip->battery_authentic_work,
 				msecs_to_jiffies(0));
 	}
@@ -7545,7 +7709,7 @@ static int fg_gen4_probe(struct platform_device *pdev)
 		schedule_delayed_work(&fg->profile_load_work, 0);
 
 	fg_gen4_post_init(chip);
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	schedule_delayed_work(&fg->soc_work, 0);
 
 	fg->param.batt_soc = -EINVAL;
@@ -7584,7 +7748,7 @@ static void fg_gen4_shutdown(struct platform_device *pdev)
 	struct fg_gen4_chip *chip = dev_get_drvdata(&pdev->dev);
 	struct fg_dev *fg = &chip->fg;
 	int rc, bsoc;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int msoc;
 #endif
 
@@ -7600,7 +7764,7 @@ static void fg_gen4_shutdown(struct platform_device *pdev)
 				rc);
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	rc = fg_gen4_get_prop_capacity(fg, &msoc);
 	if (rc < 0) {
 		pr_err("Error in getting capacity, rc=%d\n", rc);
@@ -7614,7 +7778,7 @@ static void fg_gen4_shutdown(struct platform_device *pdev)
 		return;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (fg->charge_full || (msoc == 100)) {
 #else
 	if (fg->charge_full) {
@@ -7642,7 +7806,7 @@ static int fg_gen4_suspend(struct device *dev)
 	struct fg_gen4_chip *chip = dev_get_drvdata(dev);
 	struct fg_dev *fg = &chip->fg;
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	cancel_delayed_work_sync(&fg->soc_work);
 #endif
 	cancel_delayed_work_sync(&chip->ttf->ttf_work);
@@ -7655,11 +7819,11 @@ static int fg_gen4_resume(struct device *dev)
 {
 	struct fg_gen4_chip *chip = dev_get_drvdata(dev);
 	struct fg_dev *fg = &chip->fg;
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	int val = 0;
 #endif
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (!fg->input_present)
 		fg_get_batt_isense(fg, &val);
 
@@ -7672,7 +7836,7 @@ static int fg_gen4_resume(struct device *dev)
 		schedule_delayed_work(&fg->sram_dump_work,
 				msecs_to_jiffies(fg_sram_dump_period_ms));
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	fg->param.update_now = true;
 	schedule_delayed_work(&fg->soc_monitor_work,
 				msecs_to_jiffies(MONITOR_SOC_WAIT_MS));
@@ -7703,7 +7867,7 @@ static struct platform_driver fg_gen4_driver = {
 	.shutdown	= fg_gen4_shutdown,
 };
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static int __init early_parse_batt_profile_vendor_id(char *p)
 {
 	if (p) {
