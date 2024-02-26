@@ -1142,7 +1142,7 @@ void nvt_ts_wakeup_gesture_report(uint8_t gesture_id, uint8_t *data)
 }
 #endif
 
-static void release_pen_event()
+static void release_pen_event(void)
 {
 	if (ts && ts->pen_input_dev) {
 		input_report_abs(ts->pen_input_dev, ABS_X, 0);
@@ -3152,10 +3152,11 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	}
 
 	INIT_WORK(&ts->switch_mode_work, nvt_switch_mode_work);
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	INIT_WORK(&ts->pen_charge_state_change_work,
 		  nvt_pen_charge_state_change_work);
 	ts->pen_is_charge = false;
-
+#endif
 	ts->lkdown_readed = false;
 	pm_stay_awake(&client->dev);
 	nvt_lockdown_wq = alloc_workqueue("nvt_lockdown_wq",
@@ -3268,6 +3269,7 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	}
 	INIT_WORK(&ts->resume_work, nvt_resume_work);
 	INIT_WORK(&ts->suspend_work, nvt_suspend_work);
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	ts->set_touchfeature_wq =
 		create_singlethread_workqueue("nvt-set-touchfeature-queue");
 	if (!ts->set_touchfeature_wq) {
@@ -3286,6 +3288,7 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 			ret);
 		goto err_register_pen_charge_state_failed;
 	}
+#endif
 #ifdef CONFIG_DRM
 	ts->drm_notif.notifier_call = nvt_drm_notifier_callback;
 	ret = msm_drm_register_client(&ts->drm_notif);
@@ -3354,11 +3357,14 @@ err_register_fb_notif_failed:
 	unregister_early_suspend(&ts->early_suspend);
 err_register_early_suspend_failed:
 #endif
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	if (pen_charge_state_notifier_unregister_client(
 		    &ts->pen_charge_state_notifier))
 		NVT_ERR("Error occurred while unregistering pen charge state notifier.\n");
 err_register_pen_charge_state_failed:
 	destroy_workqueue(ts->set_touchfeature_wq);
+#endif
+
 err_create_set_touchfeature_work_queue:
 	destroy_workqueue(ts->event_wq);
 err_alloc_work_thread_failed:
@@ -3469,11 +3475,11 @@ static int32_t nvt_ts_remove(struct spi_device *client)
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&ts->early_suspend);
 #endif
-
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	if (pen_charge_state_notifier_unregister_client(
 		    &ts->pen_charge_state_notifier))
 		NVT_ERR("Error occurred while unregistering pen charge state notifier.\n");
-
+#endif
 #if NVT_TOUCH_MP
 	nvt_mp_proc_deinit();
 #endif
@@ -3526,10 +3532,10 @@ static int32_t nvt_ts_remove(struct spi_device *client)
 	}
 
 	spi_set_drvdata(client, NULL);
-
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	if (ts->set_touchfeature_wq)
 		destroy_workqueue(ts->set_touchfeature_wq);
-
+#endif
 	if (ts) {
 		kfree(ts);
 		ts = NULL;
@@ -3555,10 +3561,11 @@ static void nvt_ts_shutdown(struct spi_device *client)
 #endif
 
 	destroy_workqueue(ts->event_wq);
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	if (pen_charge_state_notifier_unregister_client(
 		    &ts->pen_charge_state_notifier))
 		NVT_ERR("Error occurred while unregistering pen charge state notifier.\n");
-
+#endif
 #if NVT_TOUCH_MP
 	nvt_mp_proc_deinit();
 #endif
@@ -3632,12 +3639,12 @@ static int32_t nvt_ts_suspend(struct device *dev)
 	NVT_LOG("suspend start\n");
 
 	bTouchIsAwake = 0;
-
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	if (ts->pen_input_dev_enable) {
 		NVT_LOG("if enable pen,will close it");
 		disable_pen_input_device(true);
 	}
-
+#endif
 	if (ts->db_wakeup) {
 		/*---write command to enter "wakeup gesture mode"---*/
 		/*DoubleClick wakeup CMD was sent by display to meet timing*/
@@ -3762,8 +3769,9 @@ static int32_t nvt_ts_resume(struct device *dev)
 	bTouchIsAwake = 1;
 
 	mutex_unlock(&ts->lock);
-
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 	disable_pen_input_device(false);
+#endif
 	dsi_panel_doubleclick_enable(
 		!!ts->db_wakeup); /*if true, dbclick work until next suspend*/
 	if (likely(ts->ic_state == NVT_IC_RESUME_IN)) {
@@ -3813,7 +3821,7 @@ static int nvt_drm_notifier_callback(struct notifier_block *self,
 				queue_work(ts_data->event_wq,
 					   &ts_data->suspend_work);
 			}
-		} else if (event == MSM_DRM_R_EARLY_EVENT_BLANK) {
+		} else if (event == MSM_DRM_EARLY_EVENT_BLANK) {
 			if (*blank == MSM_DRM_BLANK_POWERDOWN) {
 				NVT_LOG("event=%lu, *blank=%d\n", event,
 					*blank);
