@@ -193,6 +193,9 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 {
 	struct dsi_display *dsi_display = display;
 	struct dsi_panel *panel;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	struct drm_device *drm_dev;
+#endif
 	u32 bl_scale, bl_scale_ad;
 	u64 bl_temp;
 	int rc = 0;
@@ -201,6 +204,9 @@ int dsi_display_set_backlight(struct drm_connector *connector,
 		return -EINVAL;
 
 	panel = dsi_display->panel;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	drm_dev = dsi_display->drm_dev;
+#endif
 
 	mutex_lock(&panel->panel_lock);
 	if (!dsi_panel_initialized(panel)) {
@@ -4039,13 +4045,24 @@ static void _dsi_display_calc_pipe_delay(struct dsi_display *display,
 	struct dsi_display_ctrl *m_ctrl;
 	struct dsi_ctrl *dsi_ctrl;
 	struct dsi_phy_cfg *cfg;
+#ifndef CONFIG_MACH_XIAOMI_NABU
 	int phy_ver;
+#endif
 
 	m_ctrl = &display->ctrl[display->clk_master_idx];
 	dsi_ctrl = m_ctrl->ctrl;
 
 	cfg = &(m_ctrl->phy->cfg);
 
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	esc_clk_rate_hz = dsi_ctrl->clk_freq.esc_clk_rate * 1000;
+	pclk_to_esc_ratio = ((dsi_ctrl->clk_freq.pix_clk_rate * 1000) /
+			     esc_clk_rate_hz);
+	byte_to_esc_ratio = ((dsi_ctrl->clk_freq.byte_clk_rate * 1000) /
+			     esc_clk_rate_hz);
+	hr_bit_to_esc_ratio = ((dsi_ctrl->clk_freq.byte_clk_rate * 4 * 1000) /
+					esc_clk_rate_hz);
+#else
 	esc_clk_rate_hz = dsi_ctrl->clk_freq.esc_clk_rate;
 	pclk_to_esc_ratio = (dsi_ctrl->clk_freq.pix_clk_rate /
 			     esc_clk_rate_hz);
@@ -4053,6 +4070,7 @@ static void _dsi_display_calc_pipe_delay(struct dsi_display *display,
 			     esc_clk_rate_hz);
 	hr_bit_to_esc_ratio = ((dsi_ctrl->clk_freq.byte_clk_rate * 4) /
 					esc_clk_rate_hz);
+#endif
 
 	hsync_period = DSI_H_TOTAL_DSC(&mode->timing);
 	delay->pipe_delay = (hsync_period + 1) / pclk_to_esc_ratio;
@@ -4077,6 +4095,10 @@ static void _dsi_display_calc_pipe_delay(struct dsi_display *display,
 			  ((cfg->timing.lane_v3[4] >> 1) + 1)) /
 			 hr_bit_to_esc_ratio);
 
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	/* 130 us pll delay recommended by h/w doc */
+	delay->pll_delay = ((130 * esc_clk_rate_hz) / 1000000) * 2;
+#else
 	/*
 	 *100us pll delay recommended for phy ver 2.0 and 3.0
 	 *25us pll delay recommended for phy ver 4.0
@@ -4088,6 +4110,7 @@ static void _dsi_display_calc_pipe_delay(struct dsi_display *display,
 		delay->pll_delay = 25;
 
 	delay->pll_delay = (delay->pll_delay * esc_clk_rate_hz) / 1000000;
+#endif
 }
 
 static int _dsi_display_dyn_update_clks(struct dsi_display *display,
@@ -5545,6 +5568,9 @@ int dsi_display_dev_probe(struct platform_device *pdev)
 	display->boot_disp = boot_disp;
 	display->dsi_type = dsi_type;
 #if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	display->is_prim_display = true;
+#endif
 	display->is_first_boot = true;
 #endif
 

@@ -313,6 +313,12 @@ enum dsi_cmd_set_type {
 #if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	DSI_CMD_SET_MI_READ_LOCKDOWN_INFO,
 #endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	DSI_CMD_SET_DISP_PEN_120HZ,
+	DSI_CMD_SET_DISP_PEN_60HZ,
+	DSI_CMD_SET_DISP_PEN_30HZ,
+	DSI_CMD_SET_ESD_CHECK,
+#endif
 	DSI_CMD_SET_MAX
 };
 
@@ -512,6 +518,7 @@ struct dsi_host_common_cfg {
 	bool force_hs_clk_lane;
 	enum dsi_phy_type phy_type;
 	struct dsi_split_link_config split_link;
+	bool cphy_strength;
 };
 
 /**

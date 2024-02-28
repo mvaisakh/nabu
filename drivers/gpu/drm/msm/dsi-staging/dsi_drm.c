@@ -275,11 +275,22 @@ static void dsi_bridge_disable(struct drm_bridge *bridge)
 	struct dsi_display *display;
 	struct dsi_bridge *c_bridge = to_dsi_bridge(bridge);
 	int private_flags;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	struct msm_drm_notifier notify_data;
+	int event = 0;
+#endif
 
 	if (!bridge) {
 		pr_err("Invalid params\n");
 		return;
 	}
+
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	event = MSM_DRM_BLANK_POWERDOWN;
+	notify_data.data = &event;
+	msm_drm_notifier_call_chain(MSM_DRM_EARLY_EVENT_BLANK, &notify_data);
+#endif
+
 	display = c_bridge->display;
 
 	private_flags =

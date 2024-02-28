@@ -203,6 +203,9 @@ struct dsi_display {
 
 	const char *name;
 #if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	bool is_prim_display;
+#endif
 	bool is_first_boot;
 #endif
 	const char *display_type;
@@ -726,5 +729,9 @@ int dsi_display_cmd_engine_enable(struct dsi_display *display);
 int dsi_display_cmd_engine_disable(struct dsi_display *display);
 
 int dsi_host_alloc_cmd_tx_buffer(struct dsi_display *display);
+
+#ifdef CONFIG_MACH_XIAOMI_NABU
+int dsi_display_esd_irq_ctrl(struct dsi_display *display, bool enable);
+#endif
 
 #endif /* _DSI_DISPLAY_H_ */

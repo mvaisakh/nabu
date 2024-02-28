@@ -1318,6 +1318,10 @@ static int dsi_panel_parse_misc_host_config(struct dsi_host_common_cfg *host,
 					"qcom,panel-cphy-mode");
 	host->phy_type = panel_cphy_mode ? DSI_PHY_TYPE_CPHY
 						: DSI_PHY_TYPE_DPHY;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	host->cphy_strength = utils->read_bool(utils->data,
+					"qcom,mdss-dsi-cphy-strength");
+#endif
 
 	return 0;
 }
@@ -1854,6 +1858,11 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 #if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	"mi,mdss-dsi-read-lockdown-info-command",
 #endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	"qcom,mdss-dsi-dispparam-pen-120hz-command",
+	"qcom,mdss-dsi-dispparam-pen-60hz-command",
+	"qcom,mdss-dsi-dispparam-pen-30hz-command",
+#endif
 };
 
 const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
@@ -1884,6 +1893,11 @@ const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-dispparam-hbm-fod-off-command-state",
 #if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	"mi,mdss-dsi-read-lockdown-info-command-state",
+#endif
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	"qcom,mdss-dsi-dispparam-pen-120hz-command-state",
+	"qcom,mdss-dsi-dispparam-pen-60hz-command-state",
+	"qcom,mdss-dsi-dispparam-pen-30hz-command-state",
 #endif
 };
 
@@ -2498,6 +2512,11 @@ static int dsi_panel_parse_bl_config(struct dsi_panel *panel)
 	} else {
 		panel->bl_config.brightness_default_level = val;
 	}
+
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	panel->bl_config.bl_remap_flag = utils->read_bool(utils->data,
+								"qcom,mdss-brightness-remap");
+#endif
 
 	panel->bl_config.bl_inverted_dbv = utils->read_bool(utils->data,
 		"qcom,mdss-dsi-bl-inverted-dbv");
@@ -4526,9 +4545,59 @@ int dsi_panel_post_enable(struct dsi_panel *panel)
 		goto error;
 	}
 error:
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	if (panel->host_config.phy_type == DSI_PHY_TYPE_CPHY) {
+		rc = dsi_panel_match_fps_pen_setting(panel, panel->cur_mode);
+		if (rc) {
+			pr_err("[%s] failed to update TP fps code setting, rc=%d\n",
+				panel->name, rc);
+		}
+	}
+#endif
 	mutex_unlock(&panel->panel_lock);
 	return rc;
 }
+
+#ifdef CONFIG_MACH_XIAOMI_NABU
+int dsi_panel_match_fps_pen_setting(struct dsi_panel *panel,
+				struct dsi_display_mode *adj_mode)
+{
+	int rc =0;
+	int retval = 0;
+	struct dsi_display_mode_priv_info *priv_info;
+
+	if (!panel || !panel->cur_mode || !panel->cur_mode->priv_info || !adj_mode) {
+		pr_err("invalid params\n");
+		return -EAGAIN;
+	}
+
+	priv_info = panel->cur_mode->priv_info;
+
+	if (!priv_info->cmd_sets[DSI_CMD_SET_DISP_PEN_120HZ].count) {
+		pr_debug("DSI_CMD_SET_DISP_PEN_120HZ not defined, return\n");
+		return 0;
+	}
+
+	/* match fps(120/60/30Hz) pen seeting cmd */
+	if (adj_mode->timing.refresh_rate == 120)
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_PEN_120HZ);
+	else if (adj_mode->timing.refresh_rate == 60)
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_PEN_60HZ);
+	else if (adj_mode->timing.refresh_rate == 30)
+		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_PEN_30HZ);
+
+	if (rc) {
+		pr_err("Failed to send DSI_CMD_SET_DISP_PEN_120HZ command\n");
+		retval = -EAGAIN;
+		goto error;
+	}else
+		pr_info("%s: refresh_rate[%d]\n", __func__, adj_mode->timing.refresh_rate);
+
+error:
+	return retval;
+}
+#endif
+
 
 int dsi_panel_pre_disable(struct dsi_panel *panel)
 {

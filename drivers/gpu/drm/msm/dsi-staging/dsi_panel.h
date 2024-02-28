@@ -121,6 +121,9 @@ struct dsi_backlight_config {
 	bool bl_inverted_dbv;
 
 	int en_gpio;
+#ifdef CONFIG_MACH_XIAOMI_NABU
+	bool bl_remap_flag;
+#endif
 	bool dcs_type_ss;
 	/* PWM params */
 	struct pwm_device *pwm_bl;
@@ -325,6 +328,11 @@ int dsi_panel_prepare(struct dsi_panel *panel);
 int dsi_panel_enable(struct dsi_panel *panel);
 
 int dsi_panel_post_enable(struct dsi_panel *panel);
+
+#ifdef CONFIG_MACH_XIAOMI_NABU
+int dsi_panel_match_fps_pen_setting(struct dsi_panel *panel,
+				struct dsi_display_mode *adj_mode);
+#endif
 
 int dsi_panel_pre_disable(struct dsi_panel *panel);
 
