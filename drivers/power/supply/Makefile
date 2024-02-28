@@ -86,6 +86,7 @@ obj-$(CONFIG_ARCH_QCOM)		+= qcom/
 
 # nabu
 obj-$(CONFIG_MACH_XIAOMI_NABU)	+= maxim_nabu/
+obj-$(CONFIG_MACH_XIAOMI_NABU)	+= ti_nabu/
 
 # vayu
 obj-$(CONFIG_MACH_XIAOMI_VAYU)	+= maxim_vayu/

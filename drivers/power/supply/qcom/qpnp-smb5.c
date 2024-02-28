@@ -256,7 +256,7 @@ struct smb5 {
 	struct smb_dt_props	dt;
 };
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 static struct smb_charger *__smbchg;
 #endif
 
@@ -4798,7 +4798,7 @@ static int smb5_show_charger_status(struct smb5 *chip)
 	return rc;
 }
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined (CONFIG_MACH_XIAOMI_NABU)
 struct usbpd *smb_get_usbpd(void)
 {
 	return __smbchg->pd;
@@ -4858,7 +4858,7 @@ static int smb5_probe(struct platform_device *pdev)
 		return rc;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_VAYU
+#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
 	if (chg->use_bq_pump)
 		__smbchg = chg;
 #endif
