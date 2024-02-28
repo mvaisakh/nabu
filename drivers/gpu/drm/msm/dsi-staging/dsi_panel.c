@@ -20,7 +20,6 @@
 #include <linux/of_gpio.h>
 #include <linux/pwm.h>
 #include <video/mipi_display.h>
-#include <asm/hwconf_manager.h>
 
 #include "dsi_panel.h"
 #include "dsi_display.h"
@@ -57,19 +56,6 @@
 #define MAX_PANEL_JITTER		10
 #define DEFAULT_PANEL_PREFILL_LINES	25
 #define TICKS_IN_MICRO_SECOND		1000000
-
-#define HWCONPONENT_NAME "display"
-#define HWCONPONENT_KEY_LCD "LCD"
-#define HWMON_CONPONENT_NAME "display"
-#define HWMON_KEY_ACTIVE "panel_active"
-#define HWMON_KEY_REFRESH "panel_refresh"
-#define HWMON_KEY_BOOTTIME "kernel_boottime"
-#define HWMON_KEY_DAYS "kernel_days"
-#define HWMON_KEY_BL_AVG "bl_level_avg"
-#define HWMON_KEY_BL_HIGH "bl_level_high"
-#define HWMON_KEY_BL_LOW "bl_level_low"
-#define HWMON_KEY_HBM_DRUATION "hbm_duration"
-#define HWMON_KEY_HBM_TIMES "hbm_times"
 
 #define DAY_SECS (60*60*24)
 #define XY_COORDINATE_NUM    2
@@ -3948,17 +3934,6 @@ static int dsi_panel_parse_mi_config(struct dsi_panel *panel,
 	panel->panel_dead_flag = false;
 	panel->tddi_doubleclick_flag = false;
 
-	register_hw_monitor_info(HWMON_CONPONENT_NAME);
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_ACTIVE, "0");
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_REFRESH, "0");
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_BOOTTIME, "0");
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_DAYS, "0");
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_BL_AVG, "0");
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_BL_HIGH, "0");
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_BL_LOW, "0");
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_HBM_DRUATION, "0");
-	add_hw_monitor_info(HWMON_CONPONENT_NAME, HWMON_KEY_HBM_TIMES, "0");
-
 	return rc;
 }
 
@@ -3993,10 +3968,6 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 
 	panel_model = utils->get_property(utils->data,
 				"qcom,mdss-dsi-panel-model", NULL);
-	if (panel_model) {
-		register_hw_component_info(HWCONPONENT_NAME);
-		add_hw_component_info(HWCONPONENT_NAME, HWCONPONENT_KEY_LCD, (char *)panel_model);
-	}
 
 	dispparam_enabled = utils->read_bool(utils->data,
 				"qcom,dispparam-enabled" );
