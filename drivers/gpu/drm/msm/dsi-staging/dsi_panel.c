@@ -21,7 +21,6 @@
 #include <video/mipi_display.h>
 
 #include "dsi_panel.h"
-#include "dsi_display.h"
 #include "dsi_ctrl_hw.h"
 #include "dsi_parser.h"
 
@@ -436,20 +435,7 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 {
 	int rc = 0;
 
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	if (panel->is_tddi_flag) {
-		if (!panel->tddi_doubleclick_flag || panel->panel_dead_flag) {
-			rc = dsi_pwr_enable_regulator(&panel->power_info, true);
-			if (panel->panel_dead_flag)
-				panel->panel_dead_flag = false;
-		}
-	} else {
-		rc = dsi_pwr_enable_regulator(&panel->power_info, true);
-	}
-#else
 	rc = dsi_pwr_enable_regulator(&panel->power_info, true);
-#endif
-
 	if (rc) {
 		pr_err("[%s] failed to enable vregs, rc=%d\n", panel->name, rc);
 		goto exit;
@@ -460,10 +446,6 @@ static int dsi_panel_power_on(struct dsi_panel *panel)
 		pr_err("[%s] failed to set pinctrl, rc=%d\n", panel->name, rc);
 		goto error_disable_vregs;
 	}
-
-	/* If LP11_INIT is set, skip panel reset here*/
-	if (panel->lp11_init)
-		goto exit;
 
 	rc = dsi_panel_reset(panel);
 	if (rc) {
@@ -496,20 +478,8 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 	if (gpio_is_valid(panel->reset_config.disp_en_gpio))
 		gpio_set_value(panel->reset_config.disp_en_gpio, 0);
 
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	if (panel->is_tddi_flag) {
-		if (!panel->tddi_doubleclick_flag || panel->panel_dead_flag) {
-			if (gpio_is_valid(panel->reset_config.reset_gpio))
-				gpio_set_value(panel->reset_config.reset_gpio, 0);
-		}
-	} else {
-		if (gpio_is_valid(panel->reset_config.reset_gpio))
-			gpio_set_value(panel->reset_config.reset_gpio, 0);
-	}
-#else
-		if (gpio_is_valid(panel->reset_config.reset_gpio))
-			gpio_set_value(panel->reset_config.reset_gpio, 0);
-#endif
+	if (gpio_is_valid(panel->reset_config.reset_gpio))
+		gpio_set_value(panel->reset_config.reset_gpio, 0);
 
 	if (gpio_is_valid(panel->reset_config.lcd_mode_sel_gpio))
 		gpio_set_value(panel->reset_config.lcd_mode_sel_gpio, 0);
@@ -520,23 +490,9 @@ static int dsi_panel_power_off(struct dsi_panel *panel)
 		       rc);
 	}
 
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	if (panel->is_tddi_flag) {
-		if(!panel->tddi_doubleclick_flag || panel->panel_dead_flag) {
-			rc = dsi_pwr_enable_regulator(&panel->power_info, false);
-			if (rc)
-				pr_err("[%s] failed to enable vregs, rc=%d\n", panel->name, rc);
-		}
-	} else {
-		rc = dsi_pwr_enable_regulator(&panel->power_info, false);
-		if (rc)
-			pr_err("[%s] failed to enable vregs, rc=%d\n", panel->name, rc);
-	}
-#else
 	rc = dsi_pwr_enable_regulator(&panel->power_info, false);
 	if (rc)
 		pr_err("[%s] failed to enable vregs, rc=%d\n", panel->name, rc);
-#endif
 
 	return rc;
 }
@@ -667,11 +623,7 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 	if (panel->bl_config.bl_inverted_dbv)
 		bl_lvl = (((bl_lvl & 0xff) << 8) | (bl_lvl >> 8));
 
-	if (panel->bl_config.dcs_type_ss)
-		rc = mipi_dsi_dcs_set_display_brightness_ss(dsi, bl_lvl);
-	else
-		rc = mipi_dsi_dcs_set_display_brightness(dsi, bl_lvl);
-
+	rc = mipi_dsi_dcs_set_display_brightness(dsi, bl_lvl);
 	if (rc < 0)
 		pr_err("failed to update dcs backlight:%d\n", bl_lvl);
 
@@ -726,58 +678,6 @@ static int dsi_panel_update_pwm_backlight(struct dsi_panel *panel,
 	}
 
 error:
-	return rc;
-}
-
-static u32 dsi_panel_get_backlight(struct dsi_panel *panel)
-{
-	return panel->bl_config.bl_level;
-}
-
-static u32 interpolate(uint32_t x, uint32_t xa, uint32_t xb, uint32_t ya, uint32_t yb)
-{
-	return ya - (ya - yb) * (x - xa) / (xb - xa);
-}
-
-u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel)
-{
-	u32 brightness = dsi_panel_get_backlight(panel);
-	int i;
-
-	if (!panel->fod_dim_lut)
-		return 0;
-
-	for (i = 0; i < panel->fod_dim_lut_count; i++)
-		if (panel->fod_dim_lut[i].brightness >= brightness)
-			break;
-
-	if (i == 0)
-		return panel->fod_dim_lut[i].alpha;
-
-	if (i == panel->fod_dim_lut_count)
-		return panel->fod_dim_lut[i - 1].alpha;
-
-	return interpolate(brightness,
-			panel->fod_dim_lut[i - 1].brightness, panel->fod_dim_lut[i].brightness,
-			panel->fod_dim_lut[i - 1].alpha, panel->fod_dim_lut[i].alpha);
-}
-
-int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status)
-{
-	int rc = 0;
-
-	if (status) {
-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_HBM_FOD_ON);
-		if (rc)
-			pr_err("[%s] failed to send DSI_CMD_SET_DISP_HBM_FOD_ON cmd, rc=%d\n",
-					panel->name, rc);
-	} else {
-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_HBM_FOD_OFF);
-		if (rc)
-			pr_err("[%s] failed to send DSI_CMD_SET_DISP_HBM_FOD_OFF cmd, rc=%d\n",
-					panel->name, rc);
-	}
-
 	return rc;
 }
 
@@ -1318,10 +1218,6 @@ static int dsi_panel_parse_misc_host_config(struct dsi_host_common_cfg *host,
 					"qcom,panel-cphy-mode");
 	host->phy_type = panel_cphy_mode ? DSI_PHY_TYPE_CPHY
 						: DSI_PHY_TYPE_DPHY;
-#ifdef CONFIG_MACH_XIAOMI_NABU
-	host->cphy_strength = utils->read_bool(utils->data,
-					"qcom,mdss-dsi-cphy-strength");
-#endif
 
 	return 0;
 }
@@ -1853,16 +1749,6 @@ const char *cmd_set_prop_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-post-mode-switch-on-command",
 	"qcom,mdss-dsi-qsync-on-commands",
 	"qcom,mdss-dsi-qsync-off-commands",
-	"qcom,mdss-dsi-dispparam-hbm-fod-on-command",
-	"qcom,mdss-dsi-dispparam-hbm-fod-off-command",
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	"mi,mdss-dsi-read-lockdown-info-command",
-#endif
-#ifdef CONFIG_MACH_XIAOMI_NABU
-	"qcom,mdss-dsi-dispparam-pen-120hz-command",
-	"qcom,mdss-dsi-dispparam-pen-60hz-command",
-	"qcom,mdss-dsi-dispparam-pen-30hz-command",
-#endif
 };
 
 const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
@@ -1889,16 +1775,6 @@ const char *cmd_set_state_map[DSI_CMD_SET_MAX] = {
 	"qcom,mdss-dsi-post-mode-switch-on-command-state",
 	"qcom,mdss-dsi-qsync-on-commands-state",
 	"qcom,mdss-dsi-qsync-off-commands-state",
-	"qcom,mdss-dsi-dispparam-hbm-fod-on-command-state",
-	"qcom,mdss-dsi-dispparam-hbm-fod-off-command-state",
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	"mi,mdss-dsi-read-lockdown-info-command-state",
-#endif
-#ifdef CONFIG_MACH_XIAOMI_NABU
-	"qcom,mdss-dsi-dispparam-pen-120hz-command-state",
-	"qcom,mdss-dsi-dispparam-pen-60hz-command-state",
-	"qcom,mdss-dsi-dispparam-pen-30hz-command-state",
-#endif
 };
 
 static int dsi_panel_get_cmd_pkt_count(const char *data, u32 length, u32 *cnt)
@@ -2365,68 +2241,6 @@ error:
 	return rc;
 }
 
-static int dsi_panel_parse_fod_dim_lut(struct dsi_panel *panel,
-		struct dsi_parser_utils *utils)
-{
-	struct brightness_alpha_pair *lut;
-	u32 *array;
-	int count;
-	int len;
-	int rc;
-	int i;
-
-	len = utils->count_u32_elems(utils->data, "qcom,disp-fod-dim-lut");
-	if (len <= 0 || len % BRIGHTNESS_ALPHA_PAIR_LEN) {
-		pr_err("[%s] invalid number of elements, rc=%d\n",
-				panel->name, rc);
-		rc = -EINVAL;
-		goto count_fail;
-	}
-
-	array = kcalloc(len, sizeof(u32), GFP_KERNEL);
-	if (!array) {
-		pr_err("[%s] failed to allocate memory, rc=%d\n",
-				panel->name, rc);
-		rc = -ENOMEM;
-		goto alloc_array_fail;
-	}
-
-	rc = utils->read_u32_array(utils->data,
-			"qcom,disp-fod-dim-lut", array, len);
-	if (rc) {
-		pr_err("[%s] failed to allocate memory, rc=%d\n",
-				panel->name, rc);
-		goto read_fail;
-	}
-
-	count = len / BRIGHTNESS_ALPHA_PAIR_LEN;
-	lut = kcalloc(count, sizeof(*lut), GFP_KERNEL);
-	if (!lut) {
-		rc = -ENOMEM;
-		goto alloc_lut_fail;
-	}
-
-	for (i = 0; i < count; i++) {
-		struct brightness_alpha_pair *pair = &lut[i];
-		pair->brightness = array[i * BRIGHTNESS_ALPHA_PAIR_LEN + 0];
-		pair->alpha = array[i * BRIGHTNESS_ALPHA_PAIR_LEN + 1];
-	}
-
-	panel->fod_dim_lut = lut;
-	panel->fod_dim_lut_count = count;
-
-alloc_lut_fail:
-read_fail:
-	kfree(array);
-alloc_array_fail:
-count_fail:
-	if (rc) {
-		panel->fod_dim_lut = NULL;
-		panel->fod_dim_lut_count = 0;
-	}
-	return rc;
-}
-
 static int dsi_panel_parse_bl_config(struct dsi_panel *panel)
 {
 	int rc = 0;
@@ -2457,9 +2271,6 @@ static int dsi_panel_parse_bl_config(struct dsi_panel *panel)
 			 panel->name, bl_type);
 		panel->bl_config.type = DSI_BACKLIGHT_UNKNOWN;
 	}
-
-	panel->bl_config.dcs_type_ss = utils->read_bool(utils->data,
-							"qcom,mdss-dsi-bl-dcs-type-ss");
 
 	data = utils->get_property(utils->data, "qcom,bl-update-flag", NULL);
 	if (!data) {
@@ -2513,21 +2324,8 @@ static int dsi_panel_parse_bl_config(struct dsi_panel *panel)
 		panel->bl_config.brightness_default_level = val;
 	}
 
-#ifdef CONFIG_MACH_XIAOMI_NABU
-	panel->bl_config.bl_remap_flag = utils->read_bool(utils->data,
-								"qcom,mdss-brightness-remap");
-#endif
-
 	panel->bl_config.bl_inverted_dbv = utils->read_bool(utils->data,
 		"qcom,mdss-dsi-bl-inverted-dbv");
-
-	rc = dsi_panel_parse_fod_dim_lut(panel, utils);
-	if (rc)
-		pr_err("[%s failed to parse fod dim lut\n", panel->name);
-
-	rc = dsi_panel_parse_fod_dim_lut(panel, utils);
-	if (rc)
-		pr_err("[%s failed to parse fod dim lut\n", panel->name);
 
 	if (panel->bl_config.type == DSI_BACKLIGHT_PWM) {
 		rc = dsi_panel_parse_bl_pwm_config(panel);
@@ -3391,27 +3189,6 @@ static int dsi_panel_parse_esd_config(struct dsi_panel *panel)
 
 	esd_config = &panel->esd_config;
 	esd_config->status_mode = ESD_MODE_MAX;
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	/* esd-err-flag method will be prefered */
-	esd_config->esd_err_irq_gpio = of_get_named_gpio_flags(
-			panel->panel_of_node,
-			"qcom,esd-err-irq-gpio",
-			0,
-			(enum of_gpio_flags *)&(esd_config->esd_err_irq_flags));
-	if (gpio_is_valid(esd_config->esd_err_irq_gpio)) {
-		esd_config->esd_err_irq = gpio_to_irq(esd_config->esd_err_irq_gpio);
-		rc = gpio_request(esd_config->esd_err_irq_gpio, "esd_err_irq_gpio");
-		if (rc)
-			pr_err("%s: Failed to get esd irq gpio %d (code: %d)",
-				__func__, esd_config->esd_err_irq_gpio, rc);
-		else
-			gpio_direction_input(esd_config->esd_err_irq_gpio);
-
-		return 0;
-	}
-#endif
-
 	esd_config->esd_enabled = utils->read_bool(utils->data,
 		"qcom,esd-check-enabled");
 
@@ -3486,28 +3263,6 @@ static void dsi_panel_update_util(struct dsi_panel *panel,
 end:
 	utils->node = panel->panel_of_node;
 }
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-static int dsi_panel_parse_mi_config(struct dsi_panel *panel,
-				     struct device_node *of_node)
-{
-	int rc = 0;
-	struct dsi_parser_utils *utils;
-
-	if (panel == NULL)
-		return -EINVAL;
-
-	utils = &panel->utils;
-
-	panel->is_tddi_flag = utils->read_bool(of_node,
-								"mi,is-tddi-flag");
-
-	panel->panel_dead_flag = false;
-	panel->tddi_doubleclick_flag = false;
-
-	return rc;
-}
-#endif
 
 struct dsi_panel *dsi_panel_get(struct device *parent,
 				struct device_node *of_node,
@@ -3618,12 +3373,6 @@ struct dsi_panel *dsi_panel_get(struct device *parent,
 	rc = dsi_panel_parse_esd_config(panel);
 	if (rc)
 		pr_debug("failed to parse esd config, rc=%d\n", rc);
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	rc = dsi_panel_parse_mi_config(panel, of_node);
-	if (rc)
-		pr_err("failed to parse mi config, rc=%d\n", rc);
-#endif
 
 	panel->power_mode = SDE_MODE_DPMS_OFF;
 	drm_panel_init(&panel->drm_panel);
@@ -4054,11 +3803,9 @@ int dsi_panel_pre_prepare(struct dsi_panel *panel)
 
 	mutex_lock(&panel->panel_lock);
 
-#if 0
 	/* If LP11_INIT is set, panel will be powered up during prepare() */
 	if (panel->lp11_init)
 		goto error;
-#endif
 
 	rc = dsi_panel_power_on(panel);
 	if (rc) {
@@ -4206,17 +3953,10 @@ int dsi_panel_prepare(struct dsi_panel *panel)
 	mutex_lock(&panel->panel_lock);
 
 	if (panel->lp11_init) {
-#if 0
 		rc = dsi_panel_power_on(panel);
 		if (rc) {
 			pr_err("[%s] panel power on failed, rc=%d\n",
 			       panel->name, rc);
-			goto error;
-		}
-#endif
-		rc = dsi_panel_reset(panel);
-		if (rc) {
-			pr_err("[%s] failed to reset panel, rc=%d\n", panel->name, rc);
 			goto error;
 		}
 	}
@@ -4545,59 +4285,9 @@ int dsi_panel_post_enable(struct dsi_panel *panel)
 		goto error;
 	}
 error:
-#ifdef CONFIG_MACH_XIAOMI_NABU
-	if (panel->host_config.phy_type == DSI_PHY_TYPE_CPHY) {
-		rc = dsi_panel_match_fps_pen_setting(panel, panel->cur_mode);
-		if (rc) {
-			pr_err("[%s] failed to update TP fps code setting, rc=%d\n",
-				panel->name, rc);
-		}
-	}
-#endif
 	mutex_unlock(&panel->panel_lock);
 	return rc;
 }
-
-#ifdef CONFIG_MACH_XIAOMI_NABU
-int dsi_panel_match_fps_pen_setting(struct dsi_panel *panel,
-				struct dsi_display_mode *adj_mode)
-{
-	int rc =0;
-	int retval = 0;
-	struct dsi_display_mode_priv_info *priv_info;
-
-	if (!panel || !panel->cur_mode || !panel->cur_mode->priv_info || !adj_mode) {
-		pr_err("invalid params\n");
-		return -EAGAIN;
-	}
-
-	priv_info = panel->cur_mode->priv_info;
-
-	if (!priv_info->cmd_sets[DSI_CMD_SET_DISP_PEN_120HZ].count) {
-		pr_debug("DSI_CMD_SET_DISP_PEN_120HZ not defined, return\n");
-		return 0;
-	}
-
-	/* match fps(120/60/30Hz) pen seeting cmd */
-	if (adj_mode->timing.refresh_rate == 120)
-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_PEN_120HZ);
-	else if (adj_mode->timing.refresh_rate == 60)
-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_PEN_60HZ);
-	else if (adj_mode->timing.refresh_rate == 30)
-		rc = dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_DISP_PEN_30HZ);
-
-	if (rc) {
-		pr_err("Failed to send DSI_CMD_SET_DISP_PEN_120HZ command\n");
-		retval = -EAGAIN;
-		goto error;
-	}else
-		pr_info("%s: refresh_rate[%d]\n", __func__, adj_mode->timing.refresh_rate);
-
-error:
-	return retval;
-}
-#endif
-
 
 int dsi_panel_pre_disable(struct dsi_panel *panel)
 {
@@ -4635,9 +4325,6 @@ int dsi_panel_disable(struct dsi_panel *panel)
 
 	/* Avoid sending panel off commands when ESD recovery is underway */
 	if (!atomic_read(&panel->esd_recovery_pending)) {
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-		panel->panel_initialized = false;
-#endif
 		/*
 		 * Need to set IBB/AB regulator mode to STANDBY,
 		 * if panel is going off from AOD mode.
@@ -4686,14 +4373,6 @@ int dsi_panel_unprepare(struct dsi_panel *panel)
 		goto error;
 	}
 
-	if (!panel->lp11_init) {
-		rc = dsi_panel_power_off(panel);
-		if (rc) {
-			pr_err("[%s] panel power_Off failed, rc=%d\n",
-			       panel->name, rc);
-			goto error;
-		}
-	}
 error:
 	mutex_unlock(&panel->panel_lock);
 	return rc;
@@ -4710,247 +4389,13 @@ int dsi_panel_post_unprepare(struct dsi_panel *panel)
 
 	mutex_lock(&panel->panel_lock);
 
-	if (panel->lp11_init) {
-		rc = dsi_panel_power_off(panel);
-		if (rc) {
-			pr_err("[%s] panel power_Off failed, rc=%d\n",
-			       panel->name, rc);
-			goto error;
-		}
+	rc = dsi_panel_power_off(panel);
+	if (rc) {
+		pr_err("[%s] panel power_Off failed, rc=%d\n",
+		       panel->name, rc);
+		goto error;
 	}
 error:
 	mutex_unlock(&panel->panel_lock);
 	return rc;
 }
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-static int dsi_panel_get_lockdown_from_cmdline(unsigned char *plockdowninfo)
-{
-	int ret = -1;
-	char lockdown_str[40] = {'\0'};
-	char *match = (char *) strnstr(saved_command_line,
-				"msm_drm.panel_lockdown=",
-				strlen(saved_command_line));
-
-	if (match && plockdowninfo) {
-		memcpy(lockdown_str, (match + strlen("msm_drm.panel_lockdown=")),
-			sizeof(lockdown_str) - 1);
-		if (sscanf(lockdown_str, "0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x",
-				&plockdowninfo[0], &plockdowninfo[1], &plockdowninfo[2], &plockdowninfo[3],
-				&plockdowninfo[4], &plockdowninfo[5], &plockdowninfo[6], &plockdowninfo[7])
-					!= 8) {
-			pr_err("failed to parse lockdown info from cmdline !\n");
-		} else {
-			pr_info("lockdown info from cmdline = 0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,"
-					"0x%02x,0x%02x,0x%02x",
-					plockdowninfo[0], plockdowninfo[1], plockdowninfo[2], plockdowninfo[3],
-					plockdowninfo[4], plockdowninfo[5], plockdowninfo[6], plockdowninfo[7]);
-			ret = 0;
-		}
-	}
-	return ret;
-}
-
-ssize_t dsi_panel_lockdown_info_read(unsigned char *plockdowninfo)
-{
-	int rc = 0;
-	int i = 0;
-	struct dsi_read_config ld_read_config;
-	struct dsi_panel_cmd_set cmd_sets = {0};
-	struct dsi_display *primary_display = get_main_display();
-
-	if (!dsi_panel_get_lockdown_from_cmdline(plockdowninfo))
-		return 1;
-	else if (!primary_display || !primary_display->panel || !plockdowninfo) {
-		pr_err("invalid params\n");
-		return -EINVAL;
-	}
-
-	while (!primary_display->panel->cur_mode || !primary_display->panel->cur_mode->priv_info) {
-		pr_debug("[%s][%s] waitting for panel priv_info initialized!\n", __func__, primary_display->panel->name);
-		msleep_interruptible(1000);
-	}
-
-	mutex_lock(&primary_display->panel->panel_lock);
-	if (primary_display->panel->cur_mode->priv_info->cmd_sets[DSI_CMD_SET_MI_READ_LOCKDOWN_INFO].cmds) {
-		cmd_sets.cmds = primary_display->panel->cur_mode->priv_info->cmd_sets[DSI_CMD_SET_MI_READ_LOCKDOWN_INFO].cmds;
-		cmd_sets.count = 1;
-		cmd_sets.state = primary_display->panel->cur_mode->priv_info->cmd_sets[DSI_CMD_SET_MI_READ_LOCKDOWN_INFO].state;
-		rc = dsi_panel_write_cmd_set(primary_display->panel, &cmd_sets);
-		if (rc) {
-			pr_err("[%s][%s] failed to send cmds, rc=%d\n", __func__, primary_display->panel->name, rc);
-			rc = -EIO;
-			goto done;
-		}
-
-		ld_read_config.enabled = 1;
-		ld_read_config.cmds_rlen = 8;
-		ld_read_config.read_cmd = cmd_sets;
-		ld_read_config.read_cmd.cmds = &cmd_sets.cmds[1];
-		rc = dsi_panel_read_cmd_set(primary_display->panel, &ld_read_config);
-		if (rc <= 0) {
-			pr_err("[%s][%s] failed to read cmds, rc=%d\n", __func__, primary_display->panel->name, rc);
-			rc = -EIO;
-			goto done;
-		}
-
-		for (i = 0; i < 8; i++) {
-			pr_info("[%s][%d]0x%02x", __func__, __LINE__, ld_read_config.rbuf[i]);
-			plockdowninfo[i] = ld_read_config.rbuf[i];
-		}
-	}
-
-done:
-	mutex_unlock(&primary_display->panel->panel_lock);
-	return rc;
-}
-EXPORT_SYMBOL(dsi_panel_lockdown_info_read);
-
-int dsi_panel_write_cmd_set(struct dsi_panel *panel,
-				struct dsi_panel_cmd_set *cmd_sets)
-{
-	int rc = 0, i = 0;
-	ssize_t len;
-	struct dsi_cmd_desc *cmds;
-	u32 count;
-	enum dsi_cmd_set_state state;
-	struct dsi_display_mode *mode;
-	const struct mipi_dsi_host_ops *ops = panel->host->ops;
-
-	if (!panel || !panel->cur_mode)
-		return -EINVAL;
-
-	mode = panel->cur_mode;
-
-	cmds = cmd_sets->cmds;
-	count = cmd_sets->count;
-	state = cmd_sets->state;
-
-	if (count == 0) {
-		pr_debug("[%s] No commands to be sent for state\n", panel->name);
-		goto error;
-	}
-
-	for (i = 0; i < count; i++) {
-		if (state == DSI_CMD_SET_STATE_LP)
-			cmds->msg.flags |= MIPI_DSI_MSG_USE_LPM;
-
-		if (cmds->last_command)
-			cmds->msg.flags |= MIPI_DSI_MSG_LASTCOMMAND;
-
-		len = ops->transfer(panel->host, &cmds->msg);
-		if (len < 0) {
-			rc = len;
-			pr_err("failed to set cmds, rc=%d\n", rc);
-			goto error;
-		}
-		if (cmds->post_wait_ms)
-			usleep_range(cmds->post_wait_ms*1000,
-					((cmds->post_wait_ms*1000)+10));
-		cmds++;
-	}
-error:
-	return rc;
-}
-
-int dsi_panel_read_cmd_set(struct dsi_panel *panel,
-				struct dsi_read_config *read_config)
-{
-	struct mipi_dsi_host *host;
-	struct dsi_display *display;
-	struct dsi_display_ctrl *ctrl;
-	struct dsi_cmd_desc *cmds;
-	enum dsi_cmd_set_state state;
-	int i, rc = 0, count = 0;
-	u32 flags = 0;
-
-	if (panel == NULL || read_config == NULL)
-		return -EINVAL;
-
-	host = panel->host;
-	if (host) {
-		display = container_of(host, struct dsi_display, host);
-		if (display == NULL)
-			return -EINVAL;
-	} else
-		return -EINVAL;
-
-	if (!panel->panel_initialized) {
-		pr_info("Panel not initialized\n");
-		return -EINVAL;
-	}
-
-	if (!read_config->enabled) {
-		pr_info("read operation was not permitted\n");
-		return -EPERM;
-	}
-
-	dsi_display_clk_ctrl(display->dsi_clk_handle,
-		DSI_ALL_CLKS, DSI_CLK_ON);
-
-	ctrl = &display->ctrl[display->cmd_master_idx];
-
-	rc = dsi_display_cmd_engine_enable(display);
-	if (rc) {
-		pr_err("cmd engine enable failed\n");
-		rc = -EPERM;
-		goto exit_ctrl;
-	}
-
-	if (display->tx_cmd_buf == NULL) {
-		rc = dsi_host_alloc_cmd_tx_buffer(display);
-		if (rc) {
-			pr_err("failed to allocate cmd tx buffer memory\n");
-			goto exit;
-		}
-	}
-
-	count = read_config->read_cmd.count;
-	cmds = read_config->read_cmd.cmds;
-	state = read_config->read_cmd.state;
-	if (count == 0) {
-		pr_err("No commands to be sent\n");
-		goto exit;
-	}
-	if (cmds->last_command) {
-		cmds->msg.flags |= MIPI_DSI_MSG_LASTCOMMAND;
-		flags |= DSI_CTRL_CMD_LAST_COMMAND;
-	}
-	if (state == DSI_CMD_SET_STATE_LP)
-		cmds->msg.flags |= MIPI_DSI_MSG_USE_LPM;
-	flags |= (DSI_CTRL_CMD_FETCH_MEMORY | DSI_CTRL_CMD_READ |
-		  DSI_CTRL_CMD_CUSTOM_DMA_SCHED);
-
-	memset(read_config->rbuf, 0x0, sizeof(read_config->rbuf));
-	cmds->msg.rx_buf = read_config->rbuf;
-	cmds->msg.rx_len = read_config->cmds_rlen;
-
-	rc = dsi_ctrl_cmd_transfer(ctrl->ctrl, &(cmds->msg), flags);
-	if (rc <= 0) {
-		pr_err("rx cmd transfer failed rc=%d\n", rc);
-		goto exit;
-	}
-
-	for (i = 0; i < read_config->cmds_rlen; i++) //debug
-		pr_info("0x%x ", read_config->rbuf[i]);
-	pr_info("\n");
-
-exit:
-	dsi_display_cmd_engine_disable(display);
-exit_ctrl:
-	dsi_display_clk_ctrl(display->dsi_clk_handle,
-		DSI_ALL_CLKS, DSI_CLK_OFF);
-
-	return rc;
-}
-#endif
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-void dsi_panel_doubleclick_enable(bool on)
-{
-	struct dsi_display *primary_display = get_main_display();
-	if (primary_display && primary_display->panel)
-		primary_display->panel->tddi_doubleclick_flag = on;
-}
-EXPORT_SYMBOL(dsi_panel_doubleclick_enable);
-#endif

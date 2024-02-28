@@ -121,10 +121,6 @@ struct dsi_backlight_config {
 	bool bl_inverted_dbv;
 
 	int en_gpio;
-#ifdef CONFIG_MACH_XIAOMI_NABU
-	bool bl_remap_flag;
-#endif
-	bool dcs_type_ss;
 	/* PWM params */
 	struct pwm_device *pwm_bl;
 	bool pwm_enabled;
@@ -170,27 +166,6 @@ struct drm_panel_esd_config {
 	u8 *return_buf;
 	u8 *status_buf;
 	u32 groups;
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	int esd_err_irq_gpio;
-	int esd_err_irq;
-	int esd_err_irq_flags;
-#endif
-};
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-struct dsi_read_config {
-	bool enabled;
-	struct dsi_panel_cmd_set read_cmd;
-	u32 cmds_rlen;
-	u32 valid_bits;
-	u8 rbuf[64];
-};
-#endif
-
-#define BRIGHTNESS_ALPHA_PAIR_LEN 2
-struct brightness_alpha_pair {
-	u32 brightness;
-	u32 alpha;
 };
 
 struct dsi_panel {
@@ -241,18 +216,8 @@ struct dsi_panel {
 	enum dsi_dms_mode dms_mode;
 
 	bool sync_broadcast_en;
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	bool is_tddi_flag;
-	bool tddi_doubleclick_flag;
-	bool panel_dead_flag;
-#endif
-
 	int power_mode;
 	enum dsi_panel_physical_type panel_type;
-
-	struct brightness_alpha_pair *fod_dim_lut;
-	u32 fod_dim_lut_count;
 };
 
 static inline bool dsi_panel_ulps_feature_enabled(struct dsi_panel *panel)
@@ -329,11 +294,6 @@ int dsi_panel_enable(struct dsi_panel *panel);
 
 int dsi_panel_post_enable(struct dsi_panel *panel);
 
-#ifdef CONFIG_MACH_XIAOMI_NABU
-int dsi_panel_match_fps_pen_setting(struct dsi_panel *panel,
-				struct dsi_display_mode *adj_mode);
-#endif
-
 int dsi_panel_pre_disable(struct dsi_panel *panel);
 
 int dsi_panel_disable(struct dsi_panel *panel);
@@ -377,19 +337,5 @@ struct dsi_panel *dsi_panel_ext_bridge_get(struct device *parent,
 int dsi_panel_parse_esd_reg_read_configs(struct dsi_panel *panel);
 
 void dsi_panel_ext_bridge_put(struct dsi_panel *panel);
-
-int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status);
-
-u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel);
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-ssize_t dsi_panel_lockdown_info_read(unsigned char *plockdowninfo);
-
-int dsi_panel_write_cmd_set(struct dsi_panel *panel, struct dsi_panel_cmd_set *cmd_sets);
-
-int dsi_panel_read_cmd_set(struct dsi_panel *panel, struct dsi_read_config *read_config);
-
-void dsi_panel_doubleclick_enable(bool on);
-#endif
 
 #endif /* _DSI_PANEL_H_ */

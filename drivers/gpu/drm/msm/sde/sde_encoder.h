@@ -349,13 +349,4 @@ int sde_encoder_in_cont_splash(struct drm_encoder *enc);
  */
 int sde_encoder_get_ctlstart_timeout_state(struct drm_encoder *enc);
 
-#ifdef CONFIG_MACH_XIAOMI_NABU
-/**
- * sde_encoder_vid_wait_for_active - wait Vactive region for some mark region
- * @drm_enc:    Pointer to drm encoder structure
- * @Return:     non zero value if wait timeout occurred
- */
-int sde_encoder_vid_wait_for_active(struct drm_encoder *enc);
-#endif
-
 #endif /* __SDE_ENCODER_H__ */

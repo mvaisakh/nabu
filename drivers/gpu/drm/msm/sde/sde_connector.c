@@ -21,12 +21,8 @@
 #include <linux/string.h>
 #include "dsi_drm.h"
 #include "dsi_display.h"
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-#include "dsi_panel.h"
-#endif
 #include "sde_crtc.h"
 #include "sde_rm.h"
-//#include "sde_trace.h"
 
 #define BL_NODE_NAME_SIZE 32
 
@@ -587,41 +583,6 @@ static int _sde_connector_update_dirty_properties(
 	return 0;
 }
 
-void sde_connector_update_fod_hbm(struct drm_connector *connector)
-{
-	static atomic_t effective_status = ATOMIC_INIT(false);
-	struct sde_crtc_state *cstate;
-	struct sde_connector *c_conn;
-	struct dsi_display *display;
-	bool status;
-
-	if (!connector) {
-		SDE_ERROR("invalid connector\n");
-		return;
-	}
-
-	c_conn = to_sde_connector(connector);
-	if (c_conn->connector_type != DRM_MODE_CONNECTOR_DSI)
-		return;
-
-	display = (struct dsi_display *) c_conn->display;
-
-	if (!c_conn->encoder || !c_conn->encoder->crtc ||
-			!c_conn->encoder->crtc->state)
-		return;
-
-	cstate = to_sde_crtc_state(c_conn->encoder->crtc->state);
-	status = cstate->fod_dim_layer != NULL;
-	if (atomic_xchg(&effective_status, status) == status)
-		return;
-
-	mutex_lock(&display->panel->panel_lock);
-	dsi_panel_set_fod_hbm(display->panel, status);
-	mutex_unlock(&display->panel->panel_lock);
-
-	dsi_display_set_fod_ui(display, status);
-}
-
 int sde_connector_pre_kickoff(struct drm_connector *connector)
 {
 	struct sde_connector *c_conn;
@@ -654,8 +615,6 @@ int sde_connector_pre_kickoff(struct drm_connector *connector)
 	params.hdr_meta = &c_state->hdr_meta;
 
 	SDE_EVT32_VERBOSE(connector->base.id);
-
-	sde_connector_update_fod_hbm(connector);
 
 	rc = c_conn->ops.pre_kickoff(connector, c_conn->display, &params);
 
@@ -762,19 +721,12 @@ void sde_connector_helper_bridge_enable(struct drm_connector *connector)
 				MSM_ENC_TX_COMPLETE);
 	c_conn->allow_bl_update = true;
 
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	if (!display->is_first_boot && c_conn->bl_device) {
-#else
 	if (c_conn->bl_device) {
-#endif
 		c_conn->bl_device->props.power = FB_BLANK_UNBLANK;
 		c_conn->bl_device->props.state &= ~BL_CORE_FBBLANK;
 		backlight_update_status(c_conn->bl_device);
 	}
 	c_conn->panel_dead = false;
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	display->is_first_boot = false;
-#endif
 }
 
 int sde_connector_clk_ctrl(struct drm_connector *connector, bool enable)
@@ -1890,43 +1842,10 @@ static int sde_connector_atomic_check(struct drm_connector *connector,
 	return 0;
 }
 
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-static irqreturn_t esd_err_irq_handle(int irq, void *data)
-{
-	struct sde_connector *c_conn = data;
-	struct drm_event event;
-	bool panel_on = false;
-
-	if (!c_conn && !c_conn->display) {
-		return IRQ_HANDLED;
-	}
-
-	if (c_conn->connector_type == DRM_MODE_CONNECTOR_DSI) {
-		struct dsi_display * dsi_display = (struct dsi_display *)(c_conn->display);
-		if (dsi_display && dsi_display->panel) {
-			panel_on = dsi_display->panel->panel_initialized;
-		}
-	}
-
-	if (panel_on && (c_conn->panel_dead == false)) {
-		c_conn->panel_dead = true;
-		event.type = DRM_EVENT_PANEL_DEAD;
-		event.length = sizeof(bool);
-		msm_mode_object_event_notify(&c_conn->base.base,
-			c_conn->base.dev, &event, (u8 *)&c_conn->panel_dead);
-		sde_encoder_display_failure_notification(c_conn->encoder,false);
-	}
-	return IRQ_HANDLED;
-}
-#endif
-
 static void _sde_connector_report_panel_dead(struct sde_connector *conn,
 	bool skip_pre_kickoff)
 {
 	struct drm_event event;
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	struct dsi_display *display = (struct dsi_display *)(conn->display);
-#endif
 
 	if (!conn)
 		return;
@@ -1940,9 +1859,6 @@ static void _sde_connector_report_panel_dead(struct sde_connector *conn,
 		return;
 
 	conn->panel_dead = true;
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-	display->panel->panel_dead_flag = true;
-#endif
 	event.type = DRM_EVENT_PANEL_DEAD;
 	event.length = sizeof(bool);
 	msm_mode_object_event_notify(&conn->base.base,
@@ -2362,21 +2278,6 @@ struct drm_connector *sde_connector_init(struct drm_device *dev,
 				sizeof(dsi_display->panel->hdr_props),
 				CONNECTOR_PROP_HDR_INFO);
 		}
-
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-		/* register esd irq and enable it after panel enabled */
-		if (dsi_display && dsi_display->panel &&
-			dsi_display->panel->esd_config.esd_err_irq_gpio > 0) {
-			rc = request_threaded_irq(dsi_display->panel->esd_config.esd_err_irq,
-							NULL, esd_err_irq_handle,
-							dsi_display->panel->esd_config.esd_err_irq_flags,
-							"esd_err_irq", c_conn);
-			if (rc < 0) {
-				pr_err("%s: request irq %d failed\n", __func__, dsi_display->panel->esd_config.esd_err_irq);
-					dsi_display->panel->esd_config.esd_err_irq = 0;
-			}
-		}
-#endif
 	}
 
 	rc = sde_connector_get_info(&c_conn->base, &display_info);

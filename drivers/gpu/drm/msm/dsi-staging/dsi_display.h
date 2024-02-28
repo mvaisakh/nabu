@@ -202,12 +202,6 @@ struct dsi_display {
 	struct drm_connector *ext_conn;
 
 	const char *name;
-#if defined(CONFIG_MACH_XIAOMI_VAYU) || defined(CONFIG_MACH_XIAOMI_NABU)
-#ifdef CONFIG_MACH_XIAOMI_NABU
-	bool is_prim_display;
-#endif
-	bool is_first_boot;
-#endif
 	const char *display_type;
 	const char *dsi_type;
 	struct list_head list;
@@ -287,8 +281,6 @@ struct dsi_display {
 	struct dsi_display_boot_param *boot_disp;
 
 	u32 te_source;
-
-	atomic_t fod_ui;
 };
 
 int dsi_display_dev_probe(struct platform_device *pdev);
@@ -719,19 +711,5 @@ int dsi_display_cont_splash_config(void *display);
  */
 int dsi_display_get_panel_vfp(void *display,
 	int h_active, int v_active);
-
-struct dsi_display *get_main_display(void);
-
-void dsi_display_set_fod_ui(struct dsi_display *display, bool status);
-
-int dsi_display_cmd_engine_enable(struct dsi_display *display);
-
-int dsi_display_cmd_engine_disable(struct dsi_display *display);
-
-int dsi_host_alloc_cmd_tx_buffer(struct dsi_display *display);
-
-#ifdef CONFIG_MACH_XIAOMI_NABU
-int dsi_display_esd_irq_ctrl(struct dsi_display *display, bool enable);
-#endif
 
 #endif /* _DSI_DISPLAY_H_ */
